@@ -1,9 +1,10 @@
 export class YouTubeAPI {
     constructor() {
-        // Use absolute URL for local dev, but relative URL for production (Render)
+        // Use localhost:8000 for local development, 
+        // but use the same domain with /api prefix for production (Vercel)
         this.proxyUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:8000' 
-            : window.location.origin;
+            : '/api';
     }
 
     // Stub out old key methods for backward compatibility with app.js

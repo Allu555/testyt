@@ -134,6 +134,7 @@ class App {
     loadInitialData() {
         this.renderHome();
         this.renderFavorites();
+        
     }
 
     renderHome() {
