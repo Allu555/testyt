@@ -1,10 +1,11 @@
 export class YouTubeAPI {
     constructor() {
-        // Use localhost:8000 for local development, 
-        // but use the same domain with /api prefix for production (Vercel)
+        // For unified server (Koyeb/Render):
+        // Local dev: localhost:8000
+        // Production: relative to the domain root
         this.proxyUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:8000' 
-            : '/api';
+            : '';
     }
 
     // Stub out old key methods for backward compatibility with app.js

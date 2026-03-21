@@ -75,14 +75,14 @@ async def search(q: str = Query(...), limit: int = 20):
 async def health():
     return {"status": "ok", "ytmusic": "initialized" if yt else "failed"}
 
-# Serve static files (CSS and JS)
-app.mount("/css", StaticFiles(directory="css"), name="css")
-app.mount("/js", StaticFiles(directory="js"), name="js")
+# Serve static files (CSS and JS) from the public/ folder
+app.mount("/css", StaticFiles(directory="public/css"), name="css")
+app.mount("/js", StaticFiles(directory="public/js"), name="js")
 
-# Serve the index.html at the root
+# Serve the index.html from the public/ folder
 @app.get("/")
 async def read_index():
-    return FileResponse("index.html")
+    return FileResponse("public/index.html")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
