@@ -1,7 +1,12 @@
 export class YouTubeAPI {
     constructor() {
-        // Use the current hostname to allow mobile devices on the same network to connect
-        this.proxyUrl = `http://${window.location.hostname || 'localhost'}:8000`;
+        // Automatically detect if we are on Vercel and use the serverless API, 
+        // otherwise connect to the local Python proxy.
+        if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('now.sh')) {
+            this.proxyUrl = '/api'; 
+        } else {
+            this.proxyUrl = `http://${window.location.hostname || 'localhost'}:8000`;
+        }
     }
 
     // Stub out old key methods for backward compatibility with app.js
