@@ -1,0 +1,2 @@
+# Search function requirements
+ytmusicapi
