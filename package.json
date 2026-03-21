@@ -1,0 +1,27 @@
+{
+  "name": "music-player",
+  "version": "1.0.0",
+  "description": "A premium, Spotify-inspired frontend YouTube Music Player wrapper with a beautiful \"heartbeat\" progress bar.",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Allu555/ytplayer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Allu555/ytplayer/issues"
+  },
+  "homepage": "https://github.com/Allu555/ytplayer#readme",
+  "dependencies": {
+    "ytmusic-api": "^5.3.1"
+  }
+}
