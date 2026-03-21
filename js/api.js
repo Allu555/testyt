@@ -1,7 +1,7 @@
 export class YouTubeAPI {
     constructor() {
-        // We no longer need the Google API Key as we are using a local ytmusicapi proxy
-        this.proxyUrl = 'http://localhost:8000';
+        // Use the current hostname to allow mobile devices on the same network to connect
+        this.proxyUrl = `http://${window.location.hostname || 'localhost'}:8000`;
     }
 
     // Stub out old key methods for backward compatibility with app.js
