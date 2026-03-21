@@ -538,38 +538,65 @@ body {
 }
 
 /* Sliders */
-input[type=range] {
+input[type=range].progress-bar {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
+    height: 20px; /* More room for the wave */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
     outline: none;
     cursor: pointer;
+    position: relative;
+    
+    /* Using Mask to create the ECG line effect */
+    -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 10 L40 10 L45 0 L50 20 L55 10 L100 10" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>');
+    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="M0 10 L40 10 L45 0 L50 20 L55 10 L100 10" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>');
+    -webkit-mask-size: 100px 100%;
+    mask-size: 100px 100%;
+    -webkit-mask-repeat: repeat-x;
+    mask-repeat: repeat-x;
 }
 
-input[type=range]::-webkit-slider-thumb {
+input[type=range].progress-bar::-webkit-slider-runnable-track {
+    height: 20px;
+    background: transparent;
+}
+
+input[type=range].progress-bar::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--text-primary);
+    width: 2px;
+    height: 20px;
+    background: white;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    opacity: 0;
-    transition: opacity 0.2s;
+    box-shadow: 0 0 15px var(--accent);
+    border-radius: 1px;
+    z-index: 10;
+    /* Thumb shouldn't be masked if possible, but webkit-slider-thumb is inside the element. 
+       Actually, if we mask the element, the thumb is also masked. 
+       To avoid this, we'd need a separate element for the thumb or a different approach.
+       But for a "perfect" look, a vertical line thumb that follows the wave is fine. */
 }
 
-input[type=range]:hover::-webkit-slider-thumb, 
-.progress-container:hover input[type=range]::-webkit-slider-thumb,
-.volume-controls:hover input[type=range]::-webkit-slider-thumb {
-    opacity: 1;
+/* Ambient Pulse when playing */
+.ambient-bg.is-pulsing ~ .player-bar .progress-bar {
+    animation: heartbeat-wave-anim 1.5s ease-in-out infinite, heartbeat-scan 2s linear infinite;
+}
+
+@keyframes heartbeat-wave-anim {
+    0% { filter: brightness(1) drop-shadow(0 0 2px var(--accent)); }
+    50% { filter: brightness(1.8) drop-shadow(0 0 8px var(--accent)); }
+    100% { filter: brightness(1) drop-shadow(0 0 2px var(--accent)); }
+}
+
+@keyframes heartbeat-scan {
+    from { -webkit-mask-position: 0 0; mask-position: 0 0; }
+    to { -webkit-mask-position: 100px 0; mask-position: 100px 0; }
 }
 
 input[type=range]:hover {
-    background: var(--accent);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .volume-slider {
@@ -754,22 +781,70 @@ input[type=range]:hover {
         left: 8px;
         right: 8px;
         width: calc(100% - 16px);
-        border-radius: 8px;
-        height: 60px;
-        padding: 0 12px;
+        border-radius: 12px;
+        height: auto;
+        min-height: 64px;
+        padding: 8px 12px;
         background-color: var(--bg-player);
         z-index: 250;
         border: none;
         display: flex;
+        flex-direction: column; /* Stack progress bar on top of controls */
+        justify-content: center;
+        align-items: stretch;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+        gap: 4px;
+    }
+    .player-left { 
+        width: 100%; 
+        flex: 1; 
+        min-width: 0; 
+        gap: 12px; 
+        justify-content: flex-start;
+    }
+    .player-center { 
+        width: 100%; 
+        flex-direction: row; 
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+        gap: 8px;
     }
-    .player-left { width: auto; flex: 1; min-width: 0; gap: 12px; }
-    .player-center { width: auto; flex-direction: row; gap: 16px; }
-    .player-center .progress-container, .player-center .icon-btn:not(.play-pause-btn) { display: none !important; }
-    .player-center .play-pause-btn { background: transparent; color: white; width: auto; padding: 0 8px; margin-left: auto; }
-    .player-center .play-pause-btn:hover { transform: scale(1.1); }
+    
+    /* Progress Bar at the top of the mobile player bar */
+    .player-center .progress-container { 
+        display: flex !important; 
+        order: -1; 
+        width: 100%;
+        margin-bottom: 4px;
+    }
+    .player-center .progress-container .time { display: none; } /* Hide times on mini player */
+    .player-center .progress-container .progress-bar { height: 2px; }
+
+    .control-buttons {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 0px;
+    }
+    
+    .player-center .icon-btn:not(.play-pause-btn) { 
+        display: none !important; 
+    }
+    /* Specifically show Prev/Next */
+    #prev-btn, #next-btn {
+        display: flex !important;
+        font-size: 14px;
+    }
+
+    .player-center .play-pause-btn { 
+        background: transparent; 
+        color: white; 
+        width: 32px; 
+        height: 32px;
+        padding: 0;
+        font-size: 18px;
+    }
+    
     .player-right { display: none; }
     
     /* Overlay Fullscreen Video Fixes */

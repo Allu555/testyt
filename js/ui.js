@@ -172,9 +172,9 @@ export class UI {
             this.currentTimeEl.textContent = this.formatTime(currentTime);
             this.totalTimeEl.textContent = this.formatTime(duration);
 
-            // Dynamic wave progress coloring (Spotify Green to edge)
+            // Dynamic heartbeat wave progress coloring (using CSS masks for the waveform)
             const percentage = (currentTime / duration) * 100;
-            this.progressBar.style.background = `linear-gradient(to right, var(--accent) ${percentage}%, rgba(255, 255, 255, 0.3) ${percentage}%)`;
+            this.progressBar.style.background = `linear-gradient(to right, var(--accent) ${percentage}%, rgba(255, 255, 255, 0.1) ${percentage}%)`;
         }
     }
 
