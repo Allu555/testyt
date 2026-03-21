@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
 import logging
@@ -30,27 +30,32 @@ except Exception as e:
 async def root():
     return {"message": "YTPlayer API is running", "endpoints": ["/api/search", "/api/health"]}
 
-@app.get("/")
-async def root():
-    return {"message": "YTPlayer API is running", "endpoints": ["/search", "/health", "/debug"]}
+@app.api_route("/", methods=["GET"])
+async def root(request: Request):
+    return {"message": "YTPlayer API is running", "url": str(request.url), "endpoints": ["/search", "/health", "/debug"]}
+
+@app.get("/api")
+async def api_root(request: Request):
+    return {"message": "API Root reached", "url": str(request.url)}
 
 @app.get("/debug")
-async def debug():
+@app.get("/api/debug")
+async def debug(request: Request):
     import os
     try:
         files = os.listdir('.')
-        parent_files = os.listdir('..') if os.path.exists('..') else []
         return {
             "current_dir": os.getcwd(),
             "files": files,
-            "parent_files": parent_files,
+            "url": str(request.url),
             "index_exists": os.path.exists('index.html') or os.path.exists('../index.html')
         }
     except Exception as e:
         return {"error": str(e)}
 
 @app.get("/search")
-async def search(q: str = Query(...), limit: int = 20):
+@app.get("/api/search")
+async def search(request: Request, q: str = Query(...), limit: int = 20):
     if not yt:
         raise HTTPException(status_code=500, detail="YTMusic not initialized")
     
@@ -81,12 +86,18 @@ async def search(q: str = Query(...), limit: int = 20):
         return mapped_results
     except Exception as e:
         logger.error(f"Search error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e), headers={"X-Debug-URL": str(request.url)})
 
 @app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok", "ytmusic": "initialized" if yt else "failed"}
 
 @app.api_route("/{path_name:path}", methods=["GET"])
-async def catch_all(path_name: str):
-    return {"detail": "Not Found", "path": path_name}
+async def catch_all(request: Request, path_name: str = None):
+    return {
+        "detail": "Path Not Found in FastAPI",
+        "path_received": path_name,
+        "url": str(request.url),
+        "msg": "If you see this, FastAPI is working but the route didn't match."
+    }
