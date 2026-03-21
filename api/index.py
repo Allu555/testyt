@@ -30,11 +30,11 @@ except Exception as e:
 async def root():
     return {"message": "YTPlayer API is running", "endpoints": ["/api/search", "/api/health"]}
 
-@app.get("/api")
-async def api_root():
-    return {"message": "API Root"}
+@app.get("/")
+async def root():
+    return {"message": "YTPlayer API is running", "endpoints": ["/search", "/health"]}
 
-@app.get("/api/search")
+@app.get("/search")
 async def search(q: str = Query(...), limit: int = 20):
     if not yt:
         raise HTTPException(status_code=500, detail="YTMusic not initialized")
@@ -68,6 +68,10 @@ async def search(q: str = Query(...), limit: int = 20):
         logger.error(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/health")
+@app.get("/health")
 async def health():
     return {"status": "ok", "ytmusic": "initialized" if yt else "failed"}
+
+@app.api_route("/{path_name:path}", methods=["GET"])
+async def catch_all(path_name: str):
+    return {"detail": "Not Found", "path": path_name}
