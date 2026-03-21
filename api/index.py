@@ -26,6 +26,14 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize YTMusic: {e}")
 
+@app.get("/")
+async def root():
+    return {"message": "YTPlayer API is running", "endpoints": ["/api/search", "/api/health"]}
+
+@app.get("/api")
+async def api_root():
+    return {"message": "API Root"}
+
 @app.get("/api/search")
 async def search(q: str = Query(...), limit: int = 20):
     if not yt:
