@@ -32,7 +32,22 @@ async def root():
 
 @app.get("/")
 async def root():
-    return {"message": "YTPlayer API is running", "endpoints": ["/search", "/health"]}
+    return {"message": "YTPlayer API is running", "endpoints": ["/search", "/health", "/debug"]}
+
+@app.get("/debug")
+async def debug():
+    import os
+    try:
+        files = os.listdir('.')
+        parent_files = os.listdir('..') if os.path.exists('..') else []
+        return {
+            "current_dir": os.getcwd(),
+            "files": files,
+            "parent_files": parent_files,
+            "index_exists": os.path.exists('index.html') or os.path.exists('../index.html')
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/search")
 async def search(q: str = Query(...), limit: int = 20):
