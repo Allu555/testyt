@@ -1,7 +1,9 @@
 export class YouTubeAPI {
     constructor() {
-        // Local proxy backend
-        this.proxyUrl = `http://localhost:8000`;
+        // Use absolute URL for local dev, but relative URL for production (Render)
+        this.proxyUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:8000' 
+            : window.location.origin;
     }
 
     // Stub out old key methods for backward compatibility with app.js

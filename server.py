@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from ytmusicapi import YTMusic
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import uvicorn
 import logging
+import os
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +74,15 @@ async def search(q: str = Query(...), limit: int = 20):
 @app.get("/health")
 async def health():
     return {"status": "ok", "ytmusic": "initialized" if yt else "failed"}
+
+# Serve static files (CSS and JS)
+app.mount("/css", StaticFiles(directory="css"), name="css")
+app.mount("/js", StaticFiles(directory="js"), name="js")
+
+# Serve the index.html at the root
+@app.get("/")
+async def read_index():
+    return FileResponse("index.html")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+ytmusicapi
+jinja2
+python-multipart
+# Add any other missing deps
