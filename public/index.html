@@ -16,6 +16,7 @@
     <div class="app-container">
         <!-- Cinematic Ambient Background -->
         <div class="ambient-bg"></div>
+        <div class="ambient-light-system"></div>
 
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -136,17 +137,18 @@
 
             <!-- Middle: Controls -->
             <div class="player-center">
-                <div class="control-buttons">
-                    <button class="icon-btn tooltip-btn" title="Shuffle"><i class="fas fa-random"
-                            style="color: var(--accent);"></i></button>
-                    <button class="icon-btn" id="prev-btn"><i class="fas fa-step-backward"></i></button>
-                    <button class="play-pause-btn" id="play-pause-btn"><i class="fas fa-play"></i></button>
-                    <button class="icon-btn" id="next-btn"><i class="fas fa-step-forward"></i></button>
-                    <button class="icon-btn tooltip-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
-                </div>
-                <div class="progress-container">
-                    <span class="time current-time" id="current-time">0:00</span>
+                <div class="progress-container mobile-top-progress">
                     <input type="range" class="progress-bar" id="progress-bar" value="0" min="0" max="100">
+                </div>
+                <div class="control-buttons">
+                    <button class="icon-btn tooltip-btn shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
+                    <button class="icon-btn prev-next-btn" id="prev-btn"><i class="fas fa-step-backward"></i></button>
+                    <button class="play-pause-btn" id="play-pause-btn"><i class="fas fa-play"></i></button>
+                    <button class="icon-btn prev-next-btn" id="next-btn"><i class="fas fa-step-forward"></i></button>
+                    <button class="icon-btn tooltip-btn repeat-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
+                </div>
+                <div class="time-info desktop-only">
+                    <span class="time current-time" id="current-time">0:00</span>
                     <span class="time total-time" id="total-time">0:00</span>
                 </div>
             </div>

@@ -345,9 +345,11 @@ class App {
         if (state === YT.PlayerState.PLAYING) {
             this.ui.setPlayingState(true);
             document.body.classList.add('is-pulsing');
-        } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED) {
+        } else {
             this.ui.setPlayingState(false);
-            document.body.classList.remove('is-pulsing');
+            if (state !== YT.PlayerState.BUFFERING) {
+                document.body.classList.remove('is-pulsing');
+            }
         }
 
         if (state === YT.PlayerState.ENDED) {
