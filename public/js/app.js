@@ -289,6 +289,13 @@ class App {
                 }
             });
         }
+
+        // Visibility API to try and keep music playing when minimized
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                console.log("App minimized, attempting to keep playback...");
+            }
+        });
     }
 
     async performSearch(query) {
