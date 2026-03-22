@@ -138,14 +138,24 @@ export class UI {
     }
 
     updateNowPlaying(song, isFavorite) {
-        this.nowPlayingTitle.textContent = song.title;
-        this.nowPlayingChannel.textContent = song.channelTitle;
+        // Mini player
+        this.nowPlayingTitle.textContent = song.title; // Assuming this is the mini player title
+        this.nowPlayingChannel.textContent = song.channelTitle; // Assuming this is the mini player artist/channel
         if (song.thumbnail) {
-            this.nowPlayingImg.src = song.thumbnail;
+            this.nowPlayingImg.src = song.thumbnail; // Assuming this is the mini player art
             this.nowPlayingImg.style.opacity = '1';
-            this.npLargeArt.src = song.thumbnail;
         }
+        // The original updateFavoriteButton call is still relevant for the mini player
         this.updateFavoriteButton(isFavorite);
+
+        // Large Now Playing View
+        const npTitle = document.getElementById('np-title');
+        const npArtist = document.getElementById('np-artist');
+        // npLargeArt is already a class property: this.npLargeArt
+        
+        if (npTitle) npTitle.textContent = song.title;
+        if (npArtist) npArtist.textContent = song.channelTitle; // Assuming channelTitle maps to artist for large view
+        if (this.npLargeArt && song.thumbnail) this.npLargeArt.src = song.thumbnail;
     }
 
     updateFavoriteButton(isFavorite) {
