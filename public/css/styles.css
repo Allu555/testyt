@@ -777,7 +777,10 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
 .np-header { display: flex; justify-content: space-between; padding: 24px 32px; align-items: center; }
 .np-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 4px; text-transform: uppercase; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .np-top-icons { display: flex; gap: 20px; align-items: center; color: var(--text-secondary); font-size: 18px; }
-.np-close-btn { font-size: 24px; color.np-main { 
+.np-close-btn { font-size: 24px; color: var(--text-primary); cursor: pointer; transition: var(--transition); }
+.np-close-btn:active { transform: scale(0.8); }
+
+.np-main { 
     flex: 1; 
     display: flex; 
     flex-direction: column; 
