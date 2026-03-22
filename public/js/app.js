@@ -342,13 +342,12 @@ class App {
     }
 
     onPlayerStateChange(state) {
-        const ambientBg = document.querySelector('.ambient-bg');
         if (state === YT.PlayerState.PLAYING) {
             this.ui.setPlayingState(true);
-            if (ambientBg) ambientBg.classList.add('is-pulsing');
+            document.body.classList.add('is-pulsing');
         } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED) {
             this.ui.setPlayingState(false);
-            if (ambientBg) ambientBg.classList.remove('is-pulsing');
+            document.body.classList.remove('is-pulsing');
         }
 
         if (state === YT.PlayerState.ENDED) {
