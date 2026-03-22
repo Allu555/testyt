@@ -70,13 +70,14 @@ input { font-family: inherit; }
 .ambient-bg {
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: -1;
     pointer-events: none;
     background:
         radial-gradient(ellipse 60% 50% at 80% 0%, var(--ambient-1) 0%, transparent 70%),
         radial-gradient(ellipse 40% 40% at 20% 90%, var(--ambient-2) 0%, transparent 65%),
         radial-gradient(ellipse 60% 60% at 50% 50%, var(--ambient-3) 0%, transparent 100%);
     transition: background 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.4;
 }
 
 body.is-pulsing .ambient-bg {
@@ -161,8 +162,8 @@ body.is-pulsing .ambient-light-system::after {
 /* ── Sidebar ── */
 .sidebar {
     grid-area: sidebar;
-    background: linear-gradient(180deg, rgba(12, 12, 18, 0.95) 0%, rgba(8, 8, 12, 0.98) 100%);
-    backdrop-filter: blur(50px) saturate(1.5);
+    background: rgba(10, 10, 15, 0.3);
+    backdrop-filter: blur(40px) saturate(1.8);
     border-right: 1px solid var(--glass-border);
     display: flex;
     flex-direction: column;
@@ -254,6 +255,7 @@ body.is-pulsing .ambient-light-system::after {
     padding: 40px;
     scrollbar-width: thin;
     scrollbar-color: var(--text-muted) transparent;
+    background: transparent;
 }
 
 .main-content::-webkit-scrollbar { width: 6px; }
@@ -325,7 +327,7 @@ h2 {
 
 /* Song Card */
 .song-card {
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
     border-radius: 24px;
     padding: 16px;
@@ -457,8 +459,8 @@ h2 {
 /* ── Player Bar ── */
 .player-bar {
     grid-area: player;
-    background: rgba(10, 10, 15, 0.7);
-    backdrop-filter: blur(80px) saturate(1.8);
+    background: rgba(10, 10, 15, 0.4);
+    backdrop-filter: blur(80px) saturate(2);
     border-top: 1px solid var(--glass-border);
     display: grid;
     grid-template-columns: 1fr 2fr 1fr;
@@ -771,27 +773,35 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     .player-bar { bottom: 80px; }
 }
 
+/* ── Global Background UI ── */
+.global-video-bg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+
+.global-overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.6) 100%);
+    backdrop-filter: blur(10px);
+    z-index: -1;
+}
+
 /* ── Authentication UI ── */
 .auth-overlay {
     position: fixed;
     inset: 0;
     z-index: 10000;
-    background: #000;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-}
-
-.auth-overlay.hidden { display: none !important; }
-
-.auth-video-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
 }
 
 .auth-video-overlay {
