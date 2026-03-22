@@ -266,10 +266,39 @@ export class UI {
         volumeIcon.className = 'fas';
         if (volume === 0) {
             volumeIcon.classList.add('fa-volume-mute');
-        } else if (volume < 50) {
-            volumeIcon.classList.add('fa-volume-down');
+            volumeIcon.style.color = 'var(--accent)';
         } else {
-            volumeIcon.classList.add('fa-volume-up');
+            volumeIcon.style.color = '';
+            if (volume < 50) {
+                volumeIcon.classList.add('fa-volume-down');
+            } else {
+                volumeIcon.classList.add('fa-volume-up');
+            }
+        }
+    }
+
+    updateShuffleUI(isActive) {
+        const btn = document.getElementById('shuffle-btn');
+        if (btn) {
+            if (isActive) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+    }
+
+    updateRepeatUI(mode) {
+        const btn = document.getElementById('repeat-btn');
+        const icon = btn.querySelector('i');
+        if (btn && icon) {
+            btn.classList.remove('active');
+            icon.className = 'fas fa-redo-alt'; // default
+            
+            if (mode === 'all') {
+                btn.classList.add('active');
+            } else if (mode === 'one') {
+                btn.classList.add('active');
+                icon.className = 'fas fa-redo'; // Slightly different icon or add a '1' badge
+                // Since I can't easily add a badge without more HTML, changing class is enough if styled
+            }
         }
     }
 

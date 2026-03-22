@@ -152,12 +152,12 @@
                     <input type="range" class="progress-bar" id="progress-bar" value="0" min="0" max="100">
                 </div>
                 <div class="control-buttons">
-                    <button class="icon-btn tooltip-btn shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
+                    <button class="icon-btn tooltip-btn shuffle-btn" id="shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
                     <button class="icon-btn prev-next-btn" id="prev-btn"><i class="fas fa-step-backward"></i></button>
                     <button class="play-pause-btn" id="play-pause-btn"><i class="fas fa-play"></i></button>
                     <button class="icon-btn" id="next-btn-mobile" style="display:none;"><i class="fas fa-step-forward"></i></button>
                     <button class="icon-btn prev-next-btn" id="next-btn"><i class="fas fa-step-forward"></i></button>
-                    <button class="icon-btn tooltip-btn repeat-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
+                    <button class="icon-btn tooltip-btn repeat-btn" id="repeat-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
                 </div>
                 <div class="time-info desktop-only">
                     <span class="time current-time" id="current-time">0:00</span>
@@ -167,14 +167,14 @@
 
             <!-- Right: Extra Controls & Volume -->
             <div class="player-right">
-                <button class="icon-btn tooltip-btn"><i class="fas fa-microphone"></i></button>
-                <button class="icon-btn tooltip-btn"><i class="fas fa-list-ul"></i></button>
-                <button class="icon-btn tooltip-btn"><i class="fas fa-laptop-house"></i></button>
+                <button class="icon-btn tooltip-btn" id="lyrics-btn" title="Lyrics"><i class="fas fa-microphone"></i></button>
+                <button class="icon-btn tooltip-btn" id="queue-btn" title="Queue"><i class="fas fa-list-ul"></i></button>
+                <button class="icon-btn tooltip-btn" id="connect-btn" title="Connect to Device"><i class="fas fa-laptop-house"></i></button>
                 <div class="volume-controls">
-                    <i class="fas fa-volume-up" id="volume-icon"></i>
+                    <i class="fas fa-volume-up" id="volume-icon" style="cursor:pointer;" title="Mute"></i>
                     <input type="range" class="volume-slider" id="volume-slider" value="100" min="0" max="100">
                 </div>
-                <button class="icon-btn tooltip-btn" id="fs-toggle-btn"><i class="fas fa-expand-alt"></i></button>
+                <button class="icon-btn tooltip-btn" id="fs-toggle-btn" title="Fullscreen"><i class="fas fa-expand-alt"></i></button>
             </div>
         </footer>
     </div>

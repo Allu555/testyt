@@ -19,6 +19,11 @@ class App {
         this.currentPlaylistIndex = -1;
         this.currentSong = null;
 
+        this.isShuffle = false;
+        this.repeatMode = 'off'; // 'off', 'one', 'all'
+        this.isMuted = false;
+        this.lastVolume = 100;
+
         this.debounceTimeout = null;
 
         this.initAuth();
@@ -176,6 +181,15 @@ class App {
             });
         });
 
+        const logoutBtn = document.getElementById('nav-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.auth.logout();
+                window.location.reload();
+            });
+        }
+
         // Search Input Setup with Debounce
         const searchInput = document.getElementById('search-input');
         if (searchInput) {
@@ -249,8 +263,38 @@ class App {
 
         // Progress bar seeking
         const progressEl = document.getElementById('progress-bar');
-        progressEl.addEventListener('change', (e) => {
-            this.player.seekTo(parseFloat(e.target.value));
+        if (progressEl) {
+            progressEl.addEventListener('change', (e) => {
+                this.player.seekTo(parseFloat(e.target.value));
+            });
+        }
+
+        // Shuffle & Repeat
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        if (shuffleBtn) {
+            shuffleBtn.addEventListener('click', () => this.toggleShuffle());
+        }
+
+        const repeatBtn = document.getElementById('repeat-btn');
+        if (repeatBtn) {
+            repeatBtn.addEventListener('click', () => this.toggleRepeat());
+        }
+
+        // Mute Toggle
+        const volIcon = document.getElementById('volume-icon');
+        if (volIcon) {
+            volIcon.addEventListener('click', () => this.toggleMute());
+        }
+
+        // Extra Buttons Feedback
+        const extraBtns = ['lyrics-btn', 'queue-btn', 'connect-btn'];
+        extraBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    alert(`${id.charAt(0).toUpperCase() + id.slice(1).replace('-btn', '')} feature coming soon!`);
+                });
+            }
         });
 
         // Now Playing Fullscreen Toggle
@@ -333,7 +377,19 @@ class App {
 
     playNext() {
         if (this.currentPlaylist.length === 0) return;
-        this.currentPlaylistIndex = (this.currentPlaylistIndex + 1) % this.currentPlaylist.length;
+        
+        let nextIndex;
+        if (this.isShuffle) {
+            nextIndex = Math.floor(Math.random() * this.currentPlaylist.length);
+            // Try to avoid the same song if possible
+            if (nextIndex === this.currentPlaylistIndex && this.currentPlaylist.length > 1) {
+                nextIndex = (nextIndex + 1) % this.currentPlaylist.length;
+            }
+        } else {
+            nextIndex = (this.currentPlaylistIndex + 1) % this.currentPlaylist.length;
+        }
+
+        this.currentPlaylistIndex = nextIndex;
         const nextSong = this.currentPlaylist[this.currentPlaylistIndex];
         this.playSong(nextSong, this.currentPlaylist);
     }
@@ -343,6 +399,30 @@ class App {
         this.currentPlaylistIndex = (this.currentPlaylistIndex - 1 + this.currentPlaylist.length) % this.currentPlaylist.length;
         const prevSong = this.currentPlaylist[this.currentPlaylistIndex];
         this.playSong(prevSong, this.currentPlaylist);
+    }
+
+    toggleShuffle() {
+        this.isShuffle = !this.isShuffle;
+        this.ui.updateShuffleUI(this.isShuffle);
+    }
+
+    toggleRepeat() {
+        const modes = ['off', 'all', 'one'];
+        const currentIdx = modes.indexOf(this.repeatMode);
+        this.repeatMode = modes[(currentIdx + 1) % modes.length];
+        this.ui.updateRepeatUI(this.repeatMode);
+    }
+
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.isMuted) {
+            this.lastVolume = this.player.getVolume();
+            this.player.setVolume(0);
+            this.ui.updateVolumeIcon(0);
+        } else {
+            this.player.setVolume(this.lastVolume);
+            this.ui.updateVolumeIcon(this.lastVolume);
+        }
     }
 
     // Callbacks from Player
@@ -362,7 +442,14 @@ class App {
         }
 
         if (state === YT.PlayerState.ENDED) {
-            this.playNext(); // Autoplay
+            if (this.repeatMode === 'one') {
+                this.player.seekTo(0);
+                this.player.play();
+            } else if (this.repeatMode === 'all' || this.currentPlaylistIndex < this.currentPlaylist.length - 1 || this.isShuffle) {
+                this.playNext();
+            } else {
+                this.ui.setPlayingState(false);
+            }
         }
     }
 
