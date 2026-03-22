@@ -164,6 +164,50 @@ export class UI {
         if (npTitle) npTitle.textContent = song.title;
         if (npArtist) npArtist.textContent = song.channelTitle; // Assuming channelTitle maps to artist for large view
         if (this.npLargeArt && song.thumbnail) this.npLargeArt.src = song.thumbnail;
+
+        // Dynamic Ambient Color Sync
+        this.updateAmbientColors(song);
+    }
+
+    updateAmbientColors(song) {
+        if (!song.thumbnail) return;
+
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = song.thumbnail;
+        
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 10;
+            canvas.height = 10;
+            
+            ctx.drawImage(img, 0, 0, 10, 10);
+            const data = ctx.getImageData(0, 0, 10, 10).data;
+            
+            let r = 0, g = 0, b = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i];
+                g += data[i+1];
+                b += data[i+2];
+            }
+            
+            r = Math.floor(r / (data.length / 4));
+            g = Math.floor(g / (data.length / 4));
+            b = Math.floor(b / (data.length / 4));
+            
+            // Brightness boost for the glow
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            if (brightness < 50) {
+                r = Math.min(255, r + 40);
+                g = Math.min(255, g + 40);
+                b = Math.min(255, b + 40);
+            }
+
+            document.documentElement.style.setProperty('--ambient-1', `rgba(${r}, ${g}, ${b}, 0.15)`);
+            document.documentElement.style.setProperty('--ambient-2', `rgba(${g}, ${b}, ${r}, 0.08)`);
+            document.documentElement.style.setProperty('--ambient-3', `rgba(${Math.floor(r/4)}, ${Math.floor(g/4)}, ${Math.floor(b/4)}, 1)`);
+        };
     }
 
     updateFavoriteButton(isFavorite) {

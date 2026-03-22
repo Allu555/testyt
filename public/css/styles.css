@@ -34,6 +34,11 @@
     --shadow-glow: 0 0 30px rgba(232, 55, 92, 0.1);
     --shadow-card: 0 20px 40px rgba(0, 0, 0, 0.6);
     --transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    /* Dynamic Ambient Tokens */
+    --ambient-1: rgba(232, 55, 92, 0.1);
+    --ambient-2: rgba(255, 107, 53, 0.06);
+    --ambient-3: rgba(8, 8, 14, 1);
 }
 
 /* ── Reset & Base ── */
@@ -68,10 +73,19 @@ input { font-family: inherit; }
     z-index: 0;
     pointer-events: none;
     background:
-        radial-gradient(ellipse 60% 50% at 80% 0%, rgba(232, 55, 92, 0.1) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 20% 90%, rgba(255, 107, 53, 0.06) 0%, transparent 65%),
-        radial-gradient(ellipse 60% 60% at 50% 50%, rgba(8, 8, 14, 1) 0%, transparent 100%);
-    transition: background 1.5s ease;
+        radial-gradient(ellipse 60% 50% at 80% 0%, var(--ambient-1) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 90%, var(--ambient-2) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 60% at 50% 50%, var(--ambient-3) 0%, transparent 100%);
+    transition: background 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.is-pulsing .ambient-bg {
+    animation: bgPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes bgPulse {
+    0% { filter: brightness(1) saturate(1); }
+    100% { filter: brightness(1.2) saturate(1.2); }
 }
 
 @keyframes ambientShift {
@@ -101,15 +115,17 @@ input { font-family: inherit; }
 }
 
 .ambient-light-system::before {
-    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--ambient-1) 0%, transparent 70%);
     top: -20%;
     left: -20%;
+    filter: blur(150px) saturate(2);
 }
 
 .ambient-light-system::after {
-    background: radial-gradient(circle, var(--accent2) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--ambient-2) 0%, transparent 70%);
     bottom: -20%;
     right: -20%;
+    filter: blur(150px) saturate(2);
 }
 
 body.is-pulsing .ambient-light-system::before,
@@ -119,9 +135,10 @@ body.is-pulsing .ambient-light-system::after {
 }
 
 @keyframes lightPulse {
-    0% { transform: translate(0, 0) scale(1); opacity: 0.1; }
-    50% { transform: translate(5%, 5%) scale(1.1); opacity: 0.2; }
-    100% { transform: translate(-5%, -5%) scale(0.9); opacity: 0.15; }
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.1; }
+    33% { transform: translate(5%, -5%) scale(1.1) rotate(5deg); opacity: 0.2; }
+    66% { transform: translate(-5%, 5%) scale(1.05) rotate(-5deg); opacity: 0.15; }
+    100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.12; }
 }
 
 /* ── App Layout ── */
