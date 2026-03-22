@@ -397,7 +397,7 @@ h2 {
 .player-center { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 720px; margin: 0 auto; }
 .control-buttons { display: flex; align-items: center; gap: 24px; }
 .icon-btn { font-size: 18px; color: var(--text-secondary); transition: var(--transition); }
-.icon-btn:hover { color: var(--text-primary); transform: scale(1.15); }
+.icon-btn:active { transform: scale(0.9); opacity: 0.6; }
 
 .play-pause-btn {
     width: 52px;
@@ -413,7 +413,9 @@ h2 {
     transition: var(--transition);
 }
 
-.play-pause-btn:hover { transform: scale(1.1); box-shadow: 0 6px 24px var(--accent-glow); }
+.play-pause-btn:active { transform: scale(0.95); opacity: 0.8; }
+
+.song-card:active { transform: scale(0.98); }
 
 .progress-container { display: flex; align-items: center; gap: 16px; width: 100%; }
 .time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; width: 45px; text-align: center; }
@@ -450,6 +452,8 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     cursor: pointer;
     box-shadow: 0 0 15px var(--accent);
 }
+
+/* ── Custom Scrollbar ── */
 
 .player-right { display: flex; align-items: center; gap: 16px; justify-content: flex-end; }
 .volume-controls { display: flex; align-items: center; gap: 12px; }
@@ -609,45 +613,58 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     backdrop-filter: blur(60px);
     display: flex !important;
     flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .now-playing-overlay.hidden { display: none !important; }
 
-.np-header { display: flex; justify-content: space-between; padding: 24px 32px; }
-.np-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 4px; text-transform: uppercase; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.np-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; gap: 40px; }
+.np-header { display: flex; justify-content: space-between; padding: 24px 32px; align-items: center; }
+.np-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 4px; text-transform: uppercase; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.np-top-icons { display: flex; gap: 20px; align-items: center; color: var(--text-secondary); font-size: 18px; }
+.np-close-btn { font-size: 24px; color: var(--text-primary); cursor: pointer; transition: var(--transition); }
+.np-close-btn:active { transform: scale(0.8); }
+
+.np-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 32px; overflow-y: auto; }
+
 .np-art-wrapper {
-    width: min(400px, 80vmin);
+    width: min(320px, 75vmin);
     aspect-ratio: 1;
-    border-radius: 32px;
+    border-radius: 24px;
     overflow: hidden;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 80px var(--accent-glow);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px var(--accent-glow);
     transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
 }
 
 .now-playing-overlay .np-art-wrapper:hover {
     transform: scale(1.02) rotate(1deg);
 }
 
-/* ── Custom Scrollbar ── */
-::-webkit-scrollbar {
-    width: 8px;
+.np-footer-panels {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
 }
 
-::-webkit-scrollbar-track {
-    background: transparent;
+.panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
 }
 
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
+.panel h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; font-family: 'Syne', sans-serif; }
 
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid transparent;
-    background-clip: content-box;
+@media (max-width: 768px) {
+    .np-header { padding: 16px 20px; }
+    .np-top-icons i:not(.np-close-btn) { display: none; }
+    .np-main { gap: 24px; justify-content: flex-start; padding-top: 40px; }
+    .np-art-wrapper { width: 85vmin; }
+    .np-footer-panels { padding: 0 10px; }
+    
+    .auth-card { padding: 32px 24px; width: 95%; }
 }
 #np-large-art { width: 100%; height: 100%; object-fit: cover; }
