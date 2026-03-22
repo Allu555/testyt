@@ -90,30 +90,44 @@
                 </div>
                 <div class="np-main">
                     <div class="np-art-wrapper" style="position: relative;">
-                        <!-- Embed YT player here so user can watch video when overlay is active -->
-                        <img id="np-large-art" src="" alt="Album Art"
-                            style="position: absolute; width: 100%; height: 100%;">
+                <main class="np-main">
+            <div class="np-content-layout">
+                <div class="np-left-section">
+                    <div class="np-art-wrapper">
+                        <img id="np-large-art" src="" alt="Album Art">
                         <div id="ytplayer"
                             style="position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 10;"></div>
                     </div>
                 </div>
-                <div class="np-footer-panels">
-                    <div class="panel about-artist">
-                        <h3>About the artist</h3>
-                        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;"> This artist is known for their cinematic soundscapes and evolving musical journeys. Discover more of their work in your recommended feed. </p>
+
+                <div class="np-right-section">
+                    <div class="np-track-info">
+                        <h1 id="np-title">Song Title</h1>
+                        <p id="np-artist">Artist Name</p>
                     </div>
-                    <div class="panel credits">
-                        <h3>Credits</h3>
-                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary);">
-                            <span>Release Date</span>
-                            <span style="color: var(--text-primary);">2024</span>
+
+                    <div class="np-footer-panels">
+                        <div class="panel about-panel">
+                            <h3>About the artist</h3>
+                            <p>This artist is known for their cinematic soundscapes and evolving musical journeys. Discover more of their work in your recommended feed.</p>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
-                            <span>Label</span>
-                            <span style="color: var(--text-primary);">Allu Records</span>
+                        <div class="panel credits-panel">
+                            <h3>Credits</h3>
+                            <div class="credits-grid">
+                                <div class="credit-item">
+                                    <span class="label">Release Date</span>
+                                    <span class="value">2024</span>
+                                </div>
+                                <div class="credit-item">
+                                    <span class="label">Label</span>
+                                    <span class="value">Allu Records</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </main>
             </section>
         </main>
 
