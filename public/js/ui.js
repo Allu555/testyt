@@ -43,6 +43,13 @@ export class UI {
         this.recentResultsContainer = document.getElementById('recent-results');
         this.favoritesResultsContainer = document.getElementById('favorites-results');
         this.searchLoader = document.getElementById('search-loader');
+
+        // Close Now Playing on background click (optional, but good for mobile)
+        this.nowPlayingView.addEventListener('click', (e) => {
+            if (e.target === this.nowPlayingView) {
+                this.nowPlayingView.classList.add('hidden');
+            }
+        });
     }
 
     switchView(viewId) {
