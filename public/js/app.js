@@ -244,6 +244,7 @@ class App {
         volumeInputEl.addEventListener('input', (e) => {
             const vol = parseInt(e.target.value);
             this.player.setVolume(vol);
+            this.ui.updateVolumeIcon(vol);
         });
 
         // Progress bar seeking

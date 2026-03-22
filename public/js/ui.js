@@ -25,7 +25,7 @@ export class UI {
             const max = parseFloat(this.progressBar.max);
             if (max > 0) {
                 const percentage = (val / max) * 100;
-                this.progressBar.style.background = `linear-gradient(to right, var(--accent) ${percentage}%, rgba(255, 255, 255, 0.3) ${percentage}%)`;
+                this.progressBar.style.setProperty('--progress-percent', `${percentage}%`);
                 this.currentTimeEl.textContent = this.formatTime(val);
             }
         });
@@ -142,8 +142,16 @@ export class UI {
         this.nowPlayingTitle.textContent = song.title; // Assuming this is the mini player title
         this.nowPlayingChannel.textContent = song.channelTitle; // Assuming this is the mini player artist/channel
         if (song.thumbnail) {
-            this.nowPlayingImg.src = song.thumbnail; // Assuming this is the mini player art
+            this.nowPlayingImg.src = song.thumbnail;
+            this.nowPlayingImg.style.display = 'block';
             this.nowPlayingImg.style.opacity = '1';
+            
+            // Hide the placeholder icon more robustly
+            const artworkContainer = this.nowPlayingImg.closest('.artwork-placeholder');
+            if (artworkContainer) {
+                const placeholder = artworkContainer.querySelector('.placeholder-icon');
+                if (placeholder) placeholder.style.display = 'none';
+            }
         }
         // The original updateFavoriteButton call is still relevant for the mini player
         this.updateFavoriteButton(isFavorite);
@@ -176,9 +184,11 @@ export class UI {
         if (isPlaying) {
             this.playPauseIcon.classList.remove('fa-play');
             this.playPauseIcon.classList.add('fa-pause');
+            this.playPauseBtn.classList.add('playing');
         } else {
             this.playPauseIcon.classList.remove('fa-pause');
             this.playPauseIcon.classList.add('fa-play');
+            this.playPauseBtn.classList.remove('playing');
         }
     }
 
@@ -191,7 +201,10 @@ export class UI {
 
             // Dynamic heartbeat wave progress coloring (using CSS masks for the waveform)
             const percentage = (currentTime / duration) * 100;
-            this.progressBar.style.background = `linear-gradient(to right, var(--accent) ${percentage}%, rgba(255, 255, 255, 0.1) ${percentage}%)`;
+            this.progressBar.style.setProperty('--progress-percent', `${percentage}%`);
+            
+            // If the duration is known, we can also update the mask size dynamically if needed, 
+            // but the current repeat-x logic in CSS is usually sufficient.
         }
     }
 
@@ -202,7 +215,22 @@ export class UI {
         return `${m}:${s.toString().padStart(2, '0')}`;
     }
 
+    updateVolumeIcon(volume) {
+        const volumeIcon = document.getElementById('volume-icon');
+        if (!volumeIcon) return;
+        
+        volumeIcon.className = 'fas';
+        if (volume === 0) {
+            volumeIcon.classList.add('fa-volume-mute');
+        } else if (volume < 50) {
+            volumeIcon.classList.add('fa-volume-down');
+        } else {
+            volumeIcon.classList.add('fa-volume-up');
+        }
+    }
+
     showError(msg) {
+        // Aesthetic toast not implemented yet, using alert for now
         alert(msg);
     }
 }
