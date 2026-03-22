@@ -293,10 +293,10 @@ h2 {
 
 /* Song Card */
 .song-card {
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 12px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
@@ -310,18 +310,29 @@ h2 {
     border-color: rgba(232, 55, 92, 0.3);
 }
 
-.card-artist {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
 .card-img-container {
     position: relative;
     width: 100%;
     aspect-ratio: 1;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
+}
+
+.card-artist {
+    font-size: 11px;
+    color: var(--text-secondary);
 }
 
 .card-img-container img {
@@ -552,8 +563,19 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     .nav-menu { flex-direction: row; align-items: center; gap: 4px; width: 100%; }
     .nav-item { flex: 1; border-radius: 12px; flex-direction: column; gap: 4px; font-size: 10px; padding: 10px 0; text-align: center; }
     .nav-item i { font-size: 18px; }
-    .nav-item.active { background: rgba(232, 55, 92, 0.1); }
-    .nav-item.active::before { width: 30%; height: 2px; left: 35%; top: 0; transform: none; border-radius: 0 0 4px 4px; }
+    .nav-item.active { 
+        background: transparent; 
+        color: var(--accent);
+    }
+    .nav-item.active::before { 
+        width: 4px; 
+        height: 4px; 
+        left: 50%; 
+        top: 4px; 
+        transform: translateX(-50%); 
+        border-radius: 50%; 
+        box-shadow: 0 0 10px var(--accent);
+    }
 
     .main-content { padding: 20px 16px 170px; }
     .results-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -561,33 +583,97 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     .player-bar {
         grid-area: player;
         position: fixed;
-        bottom: 82px;
-        left: 10px;
-        right: 10px;
-        width: calc(100% - 20px);
-        border-radius: 20px;
-        grid-template-columns: 1fr auto;
-        padding: 12px 16px;
-        height: 80px;
-        background: rgba(15, 15, 20, 0.92);
-        border: 1px solid var(--glass-border);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-        backdrop-filter: blur(30px);
+        bottom: 90px;
+        left: 14px;
+        right: 14px;
+        width: calc(100% - 28px);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        height: 76px;
+        background: rgba(12, 12, 18, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        backdrop-filter: blur(40px);
+        transition: transform 0.3s ease;
     }
-    .player-left { gap: 12px; overflow: hidden; max-width: 60%; }
-    .artwork-placeholder { width: 52px; height: 52px; border-radius: 10px; }
-    .track-title { font-size: 14px; margin-bottom: 2px; }
-    .track-artist { font-size: 11px; opacity: 0.7; }
 
-    .player-center { grid-column: 1 / -1; width: 100%; position: absolute; top: 0; left: 0; padding: 0; }
-    .progress-container { width: 100%; padding: 0; }
-    .progress-bar { height: 4px; border-radius: 0; -webkit-mask-image: none !important; mask-image: none !important; background: rgba(255, 255, 255, 0.1) !important; }
-    .mobile-top-progress { position: absolute; top: 0; }
+    .player-left { 
+        display: flex; 
+        align-items: center; 
+        gap: 14px; 
+        flex: 1; 
+        min-width: 0; 
+        margin-right: 12px;
+    }
     
-    .control-buttons { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); gap: 16px; }
-    .prev-next-btn { display: none !important; }
-    .shuffle-btn, .repeat-btn { display: none !important; }
-    .play-pause-btn { width: 48px; height: 48px; font-size: 18px; box-shadow: 0 4px 20px var(--accent-glow); }
+    .artwork-placeholder { 
+        width: 50px; 
+        height: 50px; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+    
+    .track-info { flex: 1; min-width: 0; }
+    .track-title { 
+        font-size: 14px; 
+        font-weight: 700; 
+        color: #fff; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        margin-bottom: 2px;
+    }
+    .track-artist { 
+        font-size: 11px; 
+        color: var(--text-secondary); 
+    }
+
+    .player-center { 
+        position: absolute; 
+        top: 0; 
+        left: 24px; 
+        right: 24px; 
+        height: 2px; 
+        padding: 0;
+    }
+    
+    .progress-container { width: 100%; height: 100%; margin: 0; }
+    .progress-bar { 
+        height: 2px; 
+        border-radius: 0; 
+        -webkit-mask-image: none !important; 
+        mask-image: none !important; 
+        background: rgba(255, 255, 255, 0.1) !important;
+        position: absolute;
+        top: -1px;
+    }
+    
+    .control-buttons { 
+        display: flex; 
+        align-items: center; 
+        gap: 12px; 
+        flex-shrink: 0;
+    }
+    
+    .prev-next-btn, .shuffle-btn, .repeat-btn, .desktop-only, .player-right { display: none !important; }
+    
+    .play-pause-btn { 
+        width: 46px; 
+        height: 46px; 
+        font-size: 16px; 
+        background: #fff;
+        color: #000;
+        box-shadow: 0 0 20px rgba(255,255,255,0.2);
+    }
+    
+    #next-btn-mobile {
+        display: flex !important;
+        font-size: 18px;
+        color: var(--text-secondary);
+    }
     
     .card-delete-btn { opacity: 1; transform: scale(1); width: 26px; height: 26px; font-size: 10px; background: rgba(232, 55, 92, 0.8); backdrop-filter: blur(4px); }
     

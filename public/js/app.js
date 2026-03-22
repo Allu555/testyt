@@ -220,6 +220,7 @@ class App {
         });
 
         document.getElementById('next-btn').addEventListener('click', () => this.playNext());
+        document.getElementById('next-btn-mobile').addEventListener('click', () => this.playNext());
         document.getElementById('prev-btn').addEventListener('click', () => this.playPrev());
 
         // Favorite current song logic
