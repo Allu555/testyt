@@ -1,29 +1,38 @@
-const YTMusic = require('ytmusic-api').default;
-const ytmusic = new YTMusic();
+const YTMusic = require('ytmusic-api').default || require('ytmusic-api');
 
 exports.handler = async (event, context) => {
+    // Enable CORS
+    const headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Content-Type": "application/json"
+    };
+
+    if (event.httpMethod === "OPTIONS") {
+        return { statusCode: 200, headers, body: "" };
+    }
+
     const q = event.queryStringParameters.q;
     const limit = parseInt(event.queryStringParameters.limit) || 20;
 
     if (!q) {
         return {
             statusCode: 400,
+            headers,
             body: JSON.stringify({ error: "Missing query parameter 'q'" })
         };
     }
 
     try {
-        // Initialize the API (must be done once)
+        const ytmusic = new YTMusic();
         await ytmusic.initialize();
         
-        // Perform search
         const results = await ytmusic.searchSongs(q);
         
-        // Map to the frontend's expected format
         const mappedResults = results.slice(0, limit).map(item => ({
             id: item.videoId,
             title: item.name,
-            channelTitle: item.artist.name,
+            channelTitle: item.artist ? item.artist.name : "Unknown Artist",
             thumbnail: item.thumbnails && item.thumbnails.length > 0 
                 ? item.thumbnails[item.thumbnails.length - 1].url 
                 : ""
@@ -31,22 +40,17 @@ exports.handler = async (event, context) => {
 
         return {
             statusCode: 200,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            },
+            headers,
             body: JSON.stringify(mappedResults)
         };
     } catch (error) {
         console.error('Netlify Function Error:', error);
         return {
             statusCode: 500,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-            },
+            headers,
             body: JSON.stringify({ 
                 error: error.message,
+                stack: error.stack,
                 detail: "Node.js function encountered an error." 
             })
         };

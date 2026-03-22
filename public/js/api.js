@@ -20,9 +20,15 @@ export class YouTubeAPI {
             const endpoint = (this.proxyUrl === '') ? '/api/search' : `${this.proxyUrl}/search`;
             const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=${limit}`);
             
+            let errorMessage = 'Error fetching from Proxy';
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Error fetching from Local Proxy');
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.detail || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
@@ -33,8 +39,8 @@ export class YouTubeAPI {
                 thumbnail: item.thumbnail
             }));
         } catch (error) {
-            console.error('Search error (Local Proxy):', error);
-            throw new Error('Local Proxy Backend not running. Please start server.py first.');
+            console.error('Search error:', error);
+            throw error; // Throw the actual error so the UI can show it
         }
     }
     
