@@ -16,7 +16,9 @@ export class YouTubeAPI {
 
     async search(query, limit = 20) {
         try {
-            const response = await fetch(`${this.proxyUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+            // For Netlify, the search function is at /api/search (via redirects)
+            const endpoint = (this.proxyUrl === '') ? '/api/search' : `${this.proxyUrl}/search`;
+            const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=${limit}`);
             
             if (!response.ok) {
                 const errorData = await response.json();
