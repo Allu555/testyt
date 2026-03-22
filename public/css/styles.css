@@ -255,7 +255,7 @@ body.is-pulsing .ambient-light-system::after {
 h2 {
     font-family: 'Syne', sans-serif;
     font-size: 32px;
-    font-weight: 800;
+    font-weight: 700;
     margin-bottom: 32px;
     letter-spacing: -0.5px;
     background: linear-gradient(to bottom, #fff, #9494a8);
