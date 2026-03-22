@@ -678,7 +678,15 @@ input[type="range"].progress-bar::-webkit-slider-thumb {
     .card-delete-btn { opacity: 1; transform: scale(1); width: 26px; height: 26px; font-size: 10px; background: rgba(232, 55, 92, 0.8); backdrop-filter: blur(4px); }
     
     .search-bar { max-width: 100%; margin-bottom: 20px; padding: 12px 20px; }
-    h2 { font-size: 20px; margin-bottom: 16px; letter-spacing: 0; font-weight: 700; text-transform: none; }
+    h2 { 
+        font-family: 'Syne', sans-serif;
+        font-size: 18px; 
+        margin-bottom: 12px; 
+        letter-spacing: 0.5px; 
+        font-weight: 600; 
+        text-transform: none; 
+        opacity: 0.9;
+    }
     
     .desktop-only { display: none !important; }
 }
