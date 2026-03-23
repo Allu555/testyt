@@ -1,3 +1,8 @@
+function getHqThumbnail(url) {
+    if (!url) return '';
+    return url.replace(/w\d+-h\d+/g, 'w544-h544').replace(/=w\d+-h\d+/g, '=w544-h544');
+}
+
 export class UI {
     constructor() {
         this.views = {
@@ -86,7 +91,7 @@ export class UI {
             card.className = 'song-card';
             card.innerHTML = `
                 <div class="card-img-container">
-                    <img src="${song.thumbnail}" alt="${song.title}">
+                    <img src="${getHqThumbnail(song.thumbnail)}" alt="${song.title}">
                     <button class="card-play-btn"><i class="fas fa-play"></i></button>
                     ${onDelete ? '<button class="card-delete-btn"><i class="fas fa-times"></i></button>' : ''}
                 </div>
@@ -142,7 +147,7 @@ export class UI {
         this.nowPlayingTitle.textContent = song.title; // Assuming this is the mini player title
         this.nowPlayingChannel.textContent = song.channelTitle; // Assuming this is the mini player artist/channel
         if (song.thumbnail) {
-            this.nowPlayingImg.src = song.thumbnail;
+            this.nowPlayingImg.src = getHqThumbnail(song.thumbnail);
             this.nowPlayingImg.style.display = 'block';
             this.nowPlayingImg.style.opacity = '1';
             
@@ -163,7 +168,7 @@ export class UI {
         
         if (npTitle) npTitle.textContent = song.title;
         if (npArtist) npArtist.textContent = song.channelTitle; // Assuming channelTitle maps to artist for large view
-        if (this.npLargeArt && song.thumbnail) this.npLargeArt.src = song.thumbnail;
+        if (this.npLargeArt && song.thumbnail) this.npLargeArt.src = getHqThumbnail(song.thumbnail);
 
         // Dynamic Ambient Color Sync
         this.updateAmbientColors(song);
@@ -174,7 +179,7 @@ export class UI {
 
         const img = new Image();
         img.crossOrigin = "Anonymous";
-        img.src = song.thumbnail;
+        img.src = getHqThumbnail(song.thumbnail);
         
         img.onload = () => {
             const canvas = document.createElement('canvas');
