@@ -6,6 +6,17 @@ from fastapi.responses import FileResponse
 import uvicorn
 import logging
 import os
+import re
+
+def get_hq_thumbnail(url):
+    """Upscale YouTube Music thumbnail URL to high resolution (544x544)."""
+    if not url:
+        return ""
+    # Replace w{N}-h{N} patterns with larger size
+    url = re.sub(r'w\d+-h\d+', 'w544-h544', url)
+    # Also handle =w{N}-h{N} style params
+    url = re.sub(r'=w\d+-h\d+', '=w544-h544', url)
+    return url
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +67,7 @@ async def search(q: str = Query(...), limit: int = 20):
             channel_title = ", ".join(artist_names) if artist_names else "Unknown Artist"
             
             thumbnails = item.get("thumbnails", [])
-            thumbnail_url = thumbnails[-1].get("url") if thumbnails else ""
+            thumbnail_url = get_hq_thumbnail(thumbnails[-1].get("url")) if thumbnails else ""
             
             mapped_results.append({
                 "id": video_id,

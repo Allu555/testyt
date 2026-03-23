@@ -1,5 +1,10 @@
 const YTMusic = require('ytmusic-api').default || require('ytmusic-api');
 
+function getHqThumbnail(url) {
+    if (!url) return "";
+    return url.replace(/w\d+-h\d+/g, 'w544-h544').replace(/=w\d+-h\d+/g, '=w544-h544');
+}
+
 exports.handler = async (event, context) => {
     // Enable CORS
     const headers = {
@@ -34,7 +39,7 @@ exports.handler = async (event, context) => {
             title: item.name,
             channelTitle: item.artist ? item.artist.name : "Unknown Artist",
             thumbnail: item.thumbnails && item.thumbnails.length > 0 
-                ? item.thumbnails[item.thumbnails.length - 1].url 
+                ? getHqThumbnail(item.thumbnails[item.thumbnails.length - 1].url) 
                 : ""
         }));
 
