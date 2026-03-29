@@ -71,12 +71,13 @@ exports.handler = async (event, context) => {
             };
         }
 
+        const playlistThumbnail = entity.coverArt?.sources?.[0]?.url || "https://placehold.co/400x400/222/666?text=Track";
         const tracks = entity.trackList.map(t => {
             return {
                 // Return without YT id, frontend will lazy load
                 title: t.title,
                 channelTitle: t.subtitle,
-                thumbnail: t.coverArt?.sources?.[0]?.url || "https://placehold.co/400x400/222/666?text=Track",
+                thumbnail: t.coverArt?.sources?.[0]?.url || playlistThumbnail,
                 isSpotify: true // flag for frontend lazy load
             };
         });

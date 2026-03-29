@@ -521,12 +521,13 @@ class App {
 
         if (!song.id) {
             this.ui.setPlayingState(false);
-            tRow = document.body;
+            let tRow = document.body;
             tRow.style.cursor = 'wait';
             try {
-                const results = await this.api.search(`${song.title} ${song.channelTitle}`, 1);
+                const results = await this.api.search(`${song.title} ${song.channelTitle}`, 5);
                 if (results && results.length > 0) {
                     song.id = results[0].id;
+                    song.fallbackIds = results.slice(1).map(r => r.id);
                 } else {
                     console.warn(`Could not resolve YT ID for ${song.title}`);
                     tRow.style.cursor = 'default';
@@ -636,8 +637,19 @@ class App {
     }
 
     onPlayerError(errorCode) {
-        console.warn(`YouTube Player Error: ${errorCode}. Skipping to next song...`);
-        // 100 ensures video was removed, 101/150 means play on embedded players is blocked
+        console.warn(`YouTube Player Error: ${errorCode} on ID: ${this.currentSong?.id || 'Unknown'}.`);
+        
+        // Try fallback alternative videos for the same song if embedding was blocked (usually error 101 or 150)
+        if (this.currentSong && this.currentSong.fallbackIds && this.currentSong.fallbackIds.length > 0) {
+            const nextBestId = this.currentSong.fallbackIds.shift();
+            console.log(`Trying alternative fallback video: ${nextBestId}`);
+            this.currentSong.id = nextBestId;
+            this.player.loadSong(nextBestId);
+            return;
+        }
+        
+        // Out of fallbacks, skip to next song in playlist
+        console.warn(`No more valid fallbacks. Skipping to next song...`);
         if (this.currentPlaylist && this.currentPlaylist.length > 1) {
             this.playNext();
         } else {
