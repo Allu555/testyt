@@ -32,6 +32,9 @@
                 <a href="#" class="nav-item" data-target="search-view">
                     <i class="fas fa-search"></i> Search
                 </a>
+                <a href="#" class="nav-item" data-target="playlists-view">
+                    <i class="fas fa-list-ul"></i> Playlists
+                </a>
                 <a href="#" class="nav-item" data-target="favorites-view">
                     <i class="fas fa-heart"></i> Favorites
                 </a>
@@ -64,6 +67,13 @@
 
             <!-- Home View (Recently Played) -->
             <section id="home-view" class="view-section active">
+                <div class="spotify-import-section" style="margin-bottom: 30px; display: flex; gap: 12px; align-items: center; background: rgba(29, 185, 84, 0.05); padding: 12px 20px; border-radius: 100px; border: 1px solid rgba(29, 185, 84, 0.2); backdrop-filter: blur(10px); transition: border-color 0.3s ease; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+                    <i class="fab fa-spotify" style="color: #1DB954; font-size: 26px; filter: drop-shadow(0 0 10px rgba(29, 185, 84, 0.4));"></i>
+                    <input type="text" id="spotify-input" placeholder="Paste Spotify Playlist Link..." style="flex: 1; padding: 12px 20px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-family: inherit; font-size: 14px; outline: none; transition: all 0.3s ease;" onfocus="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(29, 185, 84, 0.5)';" onblur="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.1)';">
+                    <button id="spotify-import-btn" style="padding: 12px 32px; border-radius: 100px; background: #1DB954; color: #000; font-weight: 700; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0.5px; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);" onmouseover="this.style.transform='scale(1.05)'; this.style.background='#1ed760'; this.style.boxShadow='0 6px 20px rgba(29, 185, 84, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.background='#1DB954'; this.style.boxShadow='0 4px 15px rgba(29, 185, 84, 0.3)';">Import</button>
+                    <div id="spotify-loader" class="loader hidden" style="width: 24px; height: 24px; border-color: rgba(29, 185, 84, 0.3); border-top-color: #1DB954;"></div>
+                </div>
+                
                 <h2>Recently Played</h2>
                 <div class="results-grid" id="recent-results"></div>
             </section>
@@ -74,53 +84,72 @@
                 <div class="results-grid" id="favorites-results"></div>
             </section>
 
+            <!-- Playlists View -->
+            <section id="playlists-view" class="view-section hidden">
+                <h2>Saved Playlists</h2>
+                <div class="results-grid" id="playlists-results"></div>
+            </section>
+
+            <!-- Playlist Detail View -->
+            <section id="playlist-detail-view" class="view-section hidden">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                    <button id="back-to-playlists-btn" class="icon-btn tooltip-btn" title="Back to Playlists" style="font-size: 20px;"><i class="fas fa-arrow-left"></i></button>
+                    <h2 id="detail-playlist-title" style="margin: 0;">Playlist Details</h2>
+                    <button id="play-all-detail-btn" class="btn-primary" style="margin-left: auto;"><i class="fas fa-play"></i> Play All</button>
+                </div>
+                <div class="results-grid" id="playlist-detail-results"></div>
+            </section>
+
             <!-- Fullscreen Now Playing View -->
             <section id="now-playing-view" class="view-section hidden now-playing-overlay">
+                <!-- Animated gradient backdrop -->
+                <div class="np-backdrop"></div>
+
                 <div class="np-header">
-                    <div class="np-logo">ALLU (Playing Mode)</div>
+                    <div class="np-logo">NOW PLAYING</div>
                     <div class="np-top-icons">
-                        <i class="fas fa-dot-circle"></i>
-                        <i class="fas fa-tv"></i>
                         <i class="fas fa-expand tooltip-btn" id="video-fs-btn" title="Full Screen Video"></i>
-                        <i class="fas fa-user-plus"></i>
-                        <i class="fas fa-microphone"></i>
-                        <i class="fas fa-ellipsis-h"></i>
-                        <i class="fas fa-compress np-close-btn" id="close-np-btn"></i>
+                        <i class="fas fa-chevron-down np-close-btn" id="close-np-btn" title="Close"></i>
                     </div>
                 </div>
                 <main class="np-main">
                     <div class="np-content-layout">
                         <div class="np-left-section">
                             <div class="np-art-wrapper" style="position: relative;">
-                                <img id="np-large-art" src="" alt="Album Art" style="position: absolute; width: 100%; height: 100%;">
+                                <div class="np-art-glow"></div>
+                                <img id="np-large-art" src="" alt="Album Art">
                                 <div id="ytplayer" style="position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 10;"></div>
                             </div>
                         </div>
 
                         <div class="np-right-section">
                             <div class="np-track-info">
-                                <h1 id="np-title">Song Title</h1>
+                                <h1 id="np-title" class="np-title-marquee">Song Title</h1>
                                 <p id="np-artist">Artist Name</p>
                             </div>
 
-                            <div class="np-footer-panels">
-                                <div class="panel about-panel">
-                                    <h3>About the artist</h3>
-                                    <p>This artist is known for their cinematic soundscapes and evolving musical journeys. Discover more of their work in your recommended feed.</p>
-                                </div>
-                                <div class="panel credits-panel">
-                                    <h3>Credits</h3>
-                                    <div class="credits-grid">
-                                        <div class="credit-item">
-                                            <span class="label">Release Date</span>
-                                            <span class="value">2024</span>
-                                        </div>
-                                        <div class="credit-item">
-                                            <span class="label">Label</span>
-                                            <span class="value">Allu Records</span>
-                                        </div>
+                            <!-- Inline controls for the NP view -->
+                            <div class="np-controls">
+                                <div class="np-progress-row">
+                                    <span class="np-time np-current-time">0:00</span>
+                                    <div class="np-progress-track">
+                                        <div class="np-progress-fill"></div>
                                     </div>
+                                    <span class="np-time np-total-time">0:00</span>
                                 </div>
+                                <div class="np-control-buttons">
+                                    <button class="np-ctrl-btn" id="np-shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
+                                    <button class="np-ctrl-btn" id="np-prev-btn"><i class="fas fa-step-backward"></i></button>
+                                    <button class="np-ctrl-btn np-play-btn" id="np-play-pause-btn"><i class="fas fa-play"></i></button>
+                                    <button class="np-ctrl-btn" id="np-next-btn"><i class="fas fa-step-forward"></i></button>
+                                    <button class="np-ctrl-btn" id="np-repeat-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="np-actions-row">
+                                <button class="np-action-btn" id="np-fav-btn" title="Add to Favorites"><i class="far fa-heart"></i></button>
+                                <button class="np-action-btn" id="np-share-btn" title="Share"><i class="fas fa-share-alt"></i></button>
+                                <button class="np-action-btn" id="np-queue-btn" title="Add to Queue"><i class="fas fa-list-ul"></i></button>
                             </div>
                         </div>
                     </div>
@@ -205,7 +234,7 @@
 
     <!-- Application Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/app.js?v=2"></script>
 </body>
 
 </html>

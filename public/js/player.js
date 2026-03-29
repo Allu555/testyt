@@ -1,10 +1,11 @@
 export class Player {
-    constructor(onStateChangeCallback, onReadyCallback, onTimeUpdateCallback) {
+    constructor(onStateChangeCallback, onReadyCallback, onTimeUpdateCallback, onErrorCallback) {
         this.player = null;
         this.isReady = false;
         this.onStateChangeCallback = onStateChangeCallback;
         this.onReadyCallback = onReadyCallback;
         this.onTimeUpdateCallback = onTimeUpdateCallback;
+        this.onErrorCallback = onErrorCallback;
         this.progressInterval = null;
     }
 
@@ -22,7 +23,8 @@ export class Player {
             },
             events: {
                 'onReady': this.onPlayerReady.bind(this),
-                'onStateChange': this.onPlayerStateChange.bind(this)
+                'onStateChange': this.onPlayerStateChange.bind(this),
+                'onError': this.onPlayerError.bind(this)
             }
         });
     }
@@ -30,6 +32,13 @@ export class Player {
     onPlayerReady(event) {
         this.isReady = true;
         this.onReadyCallback();
+    }
+
+    onPlayerError(event) {
+        console.error("YouTube Player Error:", event.data);
+        if (this.onErrorCallback) {
+            this.onErrorCallback(event.data);
+        }
     }
 
     onPlayerStateChange(event) {

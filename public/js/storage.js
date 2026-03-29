@@ -59,5 +59,35 @@ export const StorageUtils = {
             items.pop();
         }
         localStorage.setItem(StorageUtils._getKey('ytpm_recent'), JSON.stringify(items));
+    },
+
+    getSavedPlaylists: () => {
+        try {
+            const items = localStorage.getItem(StorageUtils._getKey('ytpm_playlists'));
+            return items ? JSON.parse(items) : [];
+        } catch (e) {
+            return [];
+        }
+    },
+
+    savePlaylists: (playlists) => {
+        localStorage.setItem(StorageUtils._getKey('ytpm_playlists'), JSON.stringify(playlists));
+    },
+
+    addPlaylist: (playlistData) => {
+        const playlists = StorageUtils.getSavedPlaylists();
+        // Give it a unique ID if it doesn't have one
+        if (!playlistData.id) {
+            playlistData.id = 'pl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        playlists.push(playlistData);
+        StorageUtils.savePlaylists(playlists);
+        return playlistData;
+    },
+
+    removePlaylist: (playlistId) => {
+        const playlists = StorageUtils.getSavedPlaylists();
+        const updated = playlists.filter(p => p.id !== playlistId);
+        StorageUtils.savePlaylists(updated);
     }
 };

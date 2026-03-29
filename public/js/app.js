@@ -12,7 +12,8 @@ class App {
         this.player = new Player(
             this.onPlayerStateChange.bind(this),
             this.onPlayerReady.bind(this),
-            this.onTimeUpdate.bind(this)
+            this.onTimeUpdate.bind(this),
+            this.onPlayerError.bind(this)
         );
 
         this.currentPlaylist = [];
@@ -139,7 +140,109 @@ class App {
     loadInitialData() {
         this.renderHome();
         this.renderFavorites();
+        this.renderPlaylists();
+    }
+
+    renderPlaylists() {
+        const playlists = StorageUtils.getSavedPlaylists();
+        const container = document.getElementById('playlists-results');
+        if (!container) return;
         
+        container.innerHTML = '';
+        if (playlists.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1;">No saved playlists yet. Import one from the Home tab!</p>';
+            return;
+        }
+
+        playlists.forEach(pl => {
+            const card = document.createElement('div');
+            card.className = 'song-card';
+            const thumbUrl = pl.tracks.length > 0 && pl.tracks[0].thumbnail ? pl.tracks[0].thumbnail : '';
+            card.innerHTML = `
+                <div class="card-img-container">
+                    <img src="${thumbUrl}" alt="Playlist">
+                    <button class="card-play-btn"><i class="fas fa-play"></i></button>
+                    <button class="card-delete-btn"><i class="fas fa-trash"></i></button>
+                </div>
+                <div class="card-title" title="${pl.title}">${pl.title}</div>
+                <div class="card-channel">${pl.tracks.length} Tracks</div>
+            `;
+            
+            card.querySelector('.card-play-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (pl.tracks.length > 0) this.playSong(pl.tracks[0], pl.tracks);
+            });
+            
+            card.querySelector('.card-delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Delete this playlist?')) {
+                    StorageUtils.removePlaylist(pl.id);
+                    this.renderPlaylists();
+                }
+            });
+            
+            card.addEventListener('click', () => {
+                this.renderPlaylistDetail(pl);
+            });
+            
+            container.appendChild(card);
+            
+            if (window.VanillaTilt) {
+                window.VanillaTilt.init(card, { max: 15, speed: 400, glare: true, "max-glare": 0.25, scale: 1.05 });
+            }
+        });
+    }
+
+    renderPlaylistDetail(playlist) {
+        this.currentViewedPlaylist = playlist;
+        this.ui.switchView('playlist-detail-view');
+        
+        document.getElementById('detail-playlist-title').textContent = playlist.title;
+        
+        const container = document.getElementById('playlist-detail-results');
+        this.ui.renderSongs(container, playlist.tracks, (song) => {
+            this.playSong(song, playlist.tracks);
+        });
+    }
+
+    renderImportedPlaylist(songs) {
+        // If we want to show it on Home view, we can dynamically add a section
+        let importedSection = document.getElementById('imported-results-section');
+        if (songs.length === 0) {
+            if (importedSection) importedSection.style.display = 'none';
+            return;
+        }
+        
+        if (!importedSection) {
+            importedSection = document.createElement('div');
+            importedSection.id = 'imported-results-section';
+            importedSection.innerHTML = `
+                <h2 style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
+                    Imported Playlist 
+                    <button id="play-all-imported-btn" class="btn-primary" style="font-size: 14px; padding: 6px 16px;"><i class="fas fa-play"></i> Play All</button>
+                </h2>
+                <div class="results-grid" id="imported-results"></div>
+            `;
+            // Insert after recent results
+            const recentSection = document.getElementById('recent-results');
+            recentSection.parentNode.insertBefore(importedSection, recentSection.nextSibling);
+
+            document.getElementById('play-all-imported-btn').addEventListener('click', () => {
+                if (this.currentImportedSongs && this.currentImportedSongs.length > 0) {
+                    this.playSong(this.currentImportedSongs[0], this.currentImportedSongs);
+                }
+            });
+        }
+        
+        importedSection.style.display = 'block';
+        this.currentImportedSongs = songs;
+        
+        const container = document.getElementById('imported-results');
+        this.ui.renderSongs(
+            container, 
+            songs, 
+            (song) => this.playSong(song, songs)
+        );
     }
 
     renderHome() {
@@ -178,8 +281,27 @@ class App {
                 
                 if (target === 'home-view') this.renderHome();
                 if (target === 'favorites-view') this.renderFavorites();
+                if (target === 'playlists-view') this.renderPlaylists();
             });
         });
+
+        // Playlist Detail actions
+        const backBtn = document.getElementById('back-to-playlists-btn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.ui.switchView('playlists-view');
+                this.renderPlaylists();
+            });
+        }
+        
+        const playAllDetailBtn = document.getElementById('play-all-detail-btn');
+        if (playAllDetailBtn) {
+            playAllDetailBtn.addEventListener('click', () => {
+                if (this.currentViewedPlaylist && this.currentViewedPlaylist.tracks.length > 0) {
+                    this.playSong(this.currentViewedPlaylist.tracks[0], this.currentViewedPlaylist.tracks);
+                }
+            });
+        }
 
         const logoutBtn = document.getElementById('nav-logout');
         if (logoutBtn) {
@@ -218,6 +340,38 @@ class App {
                     this.api.setApiKey(key);
                     this.updateApiKeyUI(true);
                     alert("API Key Saved successfully!");
+                }
+            });
+        }
+
+        // Spotify Import Logic
+        const spotImportBtn = document.getElementById('spotify-import-btn');
+        if (spotImportBtn) {
+            const spotInput = document.getElementById('spotify-input');
+            const spotLoader = document.getElementById('spotify-loader');
+            
+            spotImportBtn.addEventListener('click', async () => {
+                const url = spotInput.value.trim();
+                if (!url) return;
+                
+                spotImportBtn.disabled = true;
+                spotLoader.classList.remove('hidden');
+                
+                try {
+                    const importedData = await this.api.importSpotify(url);
+                    if (importedData && importedData.tracks && importedData.tracks.length > 0) {
+                        spotInput.value = '';
+                        StorageUtils.addPlaylist(importedData);
+                        this.renderPlaylists();
+                        alert("Playlist imported successfully! Check the Playlists tab.");
+                    } else {
+                        alert("No playable tracks found for this playlist.");
+                    }
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    spotImportBtn.disabled = false;
+                    spotLoader.classList.add('hidden');
                 }
             });
         }
@@ -450,6 +604,16 @@ class App {
             } else {
                 this.ui.setPlayingState(false);
             }
+        }
+    }
+
+    onPlayerError(errorCode) {
+        console.warn(`YouTube Player Error: ${errorCode}. Skipping to next song...`);
+        // 100 ensures video was removed, 101/150 means play on embedded players is blocked
+        if (this.currentPlaylist && this.currentPlaylist.length > 1) {
+            this.playNext();
+        } else {
+            this.ui.setPlayingState(false);
         }
     }
 

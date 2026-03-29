@@ -43,6 +43,42 @@ export class YouTubeAPI {
             throw error; // Throw the actual error so the UI can show it
         }
     }
+
+    async importSpotify(url) {
+        try {
+            const endpoint = (this.proxyUrl === '') ? '/api/import_spotify' : `${this.proxyUrl}/api/import_spotify`;
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            
+            let errorMessage = 'Error fetching from Proxy';
+            if (!response.ok) {
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.detail || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+            return {
+                title: data.title || 'Imported Playlist',
+                tracks: data.tracks.map(item => ({
+                    id: item.id,
+                    title: this.decodeHtml(item.title),
+                    channelTitle: this.decodeHtml(item.channelTitle),
+                    thumbnail: item.thumbnail
+                }))
+            };
+        } catch (error) {
+            console.error('Spotify import error:', error);
+            throw error;
+        }
+    }
     
     // Quick and dirty HTML entity decoder
     decodeHtml(html) {

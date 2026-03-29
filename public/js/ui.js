@@ -8,7 +8,9 @@ export class UI {
         this.views = {
             home: document.getElementById('home-view'),
             search: document.getElementById('search-view'),
-            favorites: document.getElementById('favorites-view')
+            favorites: document.getElementById('favorites-view'),
+            playlists: document.getElementById('playlists-view'),
+            playlistDetail: document.getElementById('playlist-detail-view')
         };
         this.navItems = document.querySelectorAll('.nav-item');
         
