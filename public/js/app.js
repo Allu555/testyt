@@ -510,14 +510,42 @@ class App {
         }
     }
 
-    playSong(song, contextPlaylist = []) {
+    async playSong(song, contextPlaylist = []) {
         this.currentSong = song;
         if (contextPlaylist.length > 0) {
             this.currentPlaylist = contextPlaylist;
-            this.currentPlaylistIndex = this.currentPlaylist.findIndex(s => s.id === song.id);
+            this.currentPlaylistIndex = this.currentPlaylist.findIndex(s => 
+                s === song || (s.id && s.id === song.id) || (s.title === song.title && s.channelTitle === song.channelTitle)
+            );
         }
 
-        StorageUtils.addRecent(song);
+        if (!song.id) {
+            this.ui.setPlayingState(false);
+            tRow = document.body;
+            tRow.style.cursor = 'wait';
+            try {
+                const results = await this.api.search(`${song.title} ${song.channelTitle}`, 1);
+                if (results && results.length > 0) {
+                    song.id = results[0].id;
+                } else {
+                    console.warn(`Could not resolve YT ID for ${song.title}`);
+                    tRow.style.cursor = 'default';
+                    this.onPlayerError(100);
+                    return;
+                }
+            } catch (err) {
+                console.error("Resolution error:", err);
+                tRow.style.cursor = 'default';
+                this.onPlayerError(100);
+                return;
+            }
+            tRow.style.cursor = 'default';
+        }
+
+        if (song.id) {
+            StorageUtils.addRecent(song);
+        }
+        
         if (!this.ui.views.home.classList.contains('hidden')) {
             this.renderHome();
         }

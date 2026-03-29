@@ -68,7 +68,7 @@ export class YouTubeAPI {
             return {
                 title: data.title || 'Imported Playlist',
                 tracks: data.tracks.map(item => ({
-                    id: item.id,
+                    id: item.id || null, // null if lazy loaded
                     title: this.decodeHtml(item.title),
                     channelTitle: this.decodeHtml(item.channelTitle),
                     thumbnail: item.thumbnail
