@@ -10,7 +10,10 @@ export class UI {
             search: document.getElementById('search-view'),
             favorites: document.getElementById('favorites-view'),
             playlists: document.getElementById('playlists-view'),
-            playlistDetail: document.getElementById('playlist-detail-view')
+            playlistDetail: document.getElementById('playlist-detail-view'),
+            movies: document.getElementById('movies-view'),
+            admin: document.getElementById('admin-view'),
+            profile: document.getElementById('profile-view')
         };
         this.navItems = document.querySelectorAll('.nav-item');
         
@@ -20,6 +23,13 @@ export class UI {
         this.progressBar = document.getElementById('progress-bar');
         this.currentTimeEl = document.getElementById('current-time');
         this.totalTimeEl = document.getElementById('total-time');
+
+        // Now Playing view equivalents
+        this.npPlayPauseBtn = document.getElementById('np-play-pause-btn');
+        if (this.npPlayPauseBtn) this.npPlayPauseIcon = this.npPlayPauseBtn.querySelector('i');
+        this.npProgressBar = document.getElementById('np-progress-bar');
+        this.npCurrentTimeEl = document.getElementById('np-current-time');
+        this.npTotalTimeEl = document.getElementById('np-total-time');
         
         this.isDraggingProgress = false;
         this.progressBar.addEventListener('mousedown', () => this.isDraggingProgress = true);
@@ -34,8 +44,35 @@ export class UI {
                 const percentage = (val / max) * 100;
                 this.progressBar.style.setProperty('--progress-percent', `${percentage}%`);
                 this.currentTimeEl.textContent = this.formatTime(val);
+                if (this.npProgressBar) {
+                    this.npProgressBar.value = val;
+                    this.npProgressBar.style.setProperty('--progress-percent', `${percentage}%`);
+                }
+                if (this.npCurrentTimeEl) this.npCurrentTimeEl.textContent = this.formatTime(val);
             }
         });
+
+        if (this.npProgressBar) {
+            this.npProgressBar.addEventListener('mousedown', () => this.isDraggingProgress = true);
+            this.npProgressBar.addEventListener('touchstart', () => this.isDraggingProgress = true);
+            this.npProgressBar.addEventListener('mouseup', () => { setTimeout(() => this.isDraggingProgress = false, 100) });
+            this.npProgressBar.addEventListener('touchend', () => { setTimeout(() => this.isDraggingProgress = false, 100) });
+
+            this.npProgressBar.addEventListener('input', () => {
+                const val = parseFloat(this.npProgressBar.value);
+                const max = parseFloat(this.npProgressBar.max);
+                if (max > 0) {
+                    const percentage = (val / max) * 100;
+                    this.npProgressBar.style.setProperty('--progress-percent', `${percentage}%`);
+                    if (this.npCurrentTimeEl) this.npCurrentTimeEl.textContent = this.formatTime(val);
+                    
+                    // Sync back to main progress bar
+                    this.progressBar.value = val;
+                    this.progressBar.style.setProperty('--progress-percent', `${percentage}%`);
+                    this.currentTimeEl.textContent = this.formatTime(val);
+                }
+            });
+        }
         
         this.nowPlayingTitle = document.getElementById('now-playing-title');
         this.nowPlayingChannel = document.getElementById('now-playing-channel');
@@ -44,6 +81,8 @@ export class UI {
         // Fullscreen Now Playing Overlay
         this.nowPlayingView = document.getElementById('now-playing-view');
         this.npLargeArt = document.getElementById('np-large-art');
+        this.playerBar = document.querySelector('.player-bar');
+        this.isPlayerActive = false;
         
         // Results Containers
         this.searchResultsContainer = document.getElementById('search-results');
@@ -57,6 +96,31 @@ export class UI {
                 this.nowPlayingView.classList.add('hidden');
             }
         });
+
+        // Apply mobile layout adjustments on load and resize
+        this.applyMobileLayout = this.applyMobileLayout.bind(this);
+        window.addEventListener('resize', this.applyMobileLayout);
+        document.addEventListener('DOMContentLoaded', this.applyMobileLayout);
+        // Also run immediately
+        this.applyMobileLayout();
+    }
+
+    applyMobileLayout() {
+        const isMobile = window.innerWidth <= 900;
+        const player = this.playerBar;
+        if (isMobile) {
+            document.body.classList.add('mobile');
+            if (player) {
+                if (this.isPlayerActive) {
+                    player.classList.remove('hidden');
+                } else {
+                    player.classList.add('hidden');
+                }
+            }
+        } else {
+            document.body.classList.remove('mobile');
+            if (player) player.classList.remove('hidden');
+        }
     }
 
     switchView(viewId) {
@@ -79,6 +143,19 @@ export class UI {
                 view.classList.add('hidden');
             }
         });
+
+        // Show admin greeting only on home view when prepared
+        const adminGreet = document.getElementById('admin-greeting');
+        if (adminGreet) {
+            const ready = adminGreet.dataset.ready === 'true';
+            if (viewId === 'home-view' && ready) {
+                adminGreet.classList.remove('hidden');
+                adminGreet.setAttribute('aria-hidden', 'false');
+            } else {
+                adminGreet.classList.add('hidden');
+                adminGreet.setAttribute('aria-hidden', 'true');
+            }
+        }
     }
 
     renderSongs(container, songs, onPlay, onDelete = null) {
@@ -91,14 +168,20 @@ export class UI {
         songs.forEach(song => {
             const card = document.createElement('div');
             card.className = 'song-card';
+            const thumbnail = song.thumbnail ? getHqThumbnail(song.thumbnail) : '';
+            const placeholderHtml = !song.thumbnail ? `<div class="card-img-placeholder"><i class="fas fa-music"></i></div>` : '';
             card.innerHTML = `
                 <div class="card-img-container">
-                    <img src="${getHqThumbnail(song.thumbnail)}" alt="${song.title}">
-                    <button class="card-play-btn"><i class="fas fa-play"></i></button>
-                    ${onDelete ? '<button class="card-delete-btn"><i class="fas fa-times"></i></button>' : ''}
+                    <img src="${thumbnail}" alt="${song.title}" loading="lazy"
+                         onerror="this.onerror=null; this.dataset.broken='true'; this.style.display='none'; if (!this.parentNode.querySelector('.card-img-placeholder')) { const placeholder=document.createElement('div'); placeholder.className='card-img-placeholder'; placeholder.innerHTML='<i class=\\'fas fa-music\\'></i>'; this.parentNode.appendChild(placeholder); }">
+                    ${placeholderHtml}
                 </div>
-                <div class="card-title" title="${song.title}">${song.title}</div>
-                <div class="card-channel" title="${song.channelTitle}">${song.channelTitle}</div>
+                <div class="card-text">
+                    <div class="card-title" title="${song.title}">${song.title}</div>
+                    <div class="card-channel" title="${song.channelTitle}">${song.channelTitle}</div>
+                </div>
+                <button class="card-play-btn"><i class="fas fa-play"></i></button>
+                ${onDelete ? '<button class="card-delete-btn"><i class="fas fa-times"></i></button>' : ''}
             `;
             
             // Add click event for play
@@ -122,16 +205,63 @@ export class UI {
 
             container.appendChild(card);
             
-            // Apply stunning 3D hover physics using VanillaTilt
-            if (window.VanillaTilt) {
-                window.VanillaTilt.init(card, {
-                    max: 15,
-                    speed: 400,
-                    glare: true,
-                    "max-glare": 0.25,
-                    scale: 1.05
-                });
+            // Clean Spotify-style hover (no 3D tilt)
+        });
+    }
+
+    renderArtists(container, artists, onArtistClick) {
+        container.innerHTML = '';
+        if (artists.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); width: 100%; text-align: center;">No top artists recorded.</p>';
+            return;
+        }
+
+        artists.forEach(artist => {
+            const card = document.createElement('div');
+            card.className = 'artist-card';
+            
+            const initial = artist.name.charAt(0).toUpperCase();
+            
+            card.innerHTML = `
+                <div class="artist-avatar-container">
+                    <img src="" alt="${artist.name}" loading="lazy" style="opacity:0;transition:opacity 0.3s ease;">
+                </div>
+                <div class="artist-name" title="${artist.name}">${artist.name}</div>
+            `;
+            
+            const imgEl = card.querySelector('img');
+            const setPlaceholder = () => {
+                const avCont = card.querySelector('.artist-avatar-container');
+                avCont.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1DB954 0%,#0d7a36 100%);color:#000;font-weight:800;font-size:28px;border-radius:50%;">${initial}</div>`;
+            };
+            
+            // Try iTunes first; if artist has a yt thumbnail, try that too
+            const tryUrl = artist.thumbnail && !artist.thumbnail.includes('unsplash.com') ? artist.thumbnail : null;
+            
+            const loadFromItunes = () => {
+                fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist.name)}&media=music&entity=album&limit=1`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.results && data.results.length > 0) {
+                            const url = data.results[0].artworkUrl100.replace('100x100bb.jpg', '300x300bb.jpg');
+                            imgEl.src = url;
+                            imgEl.onload = () => { imgEl.style.opacity = '1'; };
+                            imgEl.onerror = setPlaceholder;
+                        } else { setPlaceholder(); }
+                    })
+                    .catch(setPlaceholder);
+            };
+            
+            if (tryUrl) {
+                imgEl.src = tryUrl;
+                imgEl.onload = () => { imgEl.style.opacity = '1'; };
+                imgEl.onerror = loadFromItunes;
+            } else {
+                loadFromItunes();
             }
+            
+            card.addEventListener('click', () => onArtistClick(artist.name));
+            container.appendChild(card);
         });
     }
 
@@ -172,6 +302,11 @@ export class UI {
         if (npArtist) npArtist.textContent = song.channelTitle; // Assuming channelTitle maps to artist for large view
         if (this.npLargeArt && song.thumbnail) this.npLargeArt.src = getHqThumbnail(song.thumbnail);
 
+        if (this.playerBar) {
+            this.isPlayerActive = true;
+            this.playerBar.classList.remove('hidden');
+        }
+
         // Dynamic Ambient Color Sync
         this.updateAmbientColors(song);
     }
@@ -211,9 +346,13 @@ export class UI {
                 b = Math.min(255, b + 40);
             }
 
-            document.documentElement.style.setProperty('--ambient-1', `rgba(${r}, ${g}, ${b}, 0.15)`);
-            document.documentElement.style.setProperty('--ambient-2', `rgba(${g}, ${b}, ${r}, 0.08)`);
+            document.documentElement.style.setProperty('--ambient-1', `rgba(${r}, ${g}, ${b}, 0.12)`);
+            document.documentElement.style.setProperty('--ambient-2', `rgba(${g}, ${b}, ${r}, 0.06)`);
             document.documentElement.style.setProperty('--ambient-3', `rgba(${Math.floor(r/4)}, ${Math.floor(g/4)}, ${Math.floor(b/4)}, 1)`);
+            
+            if (window.app && window.app.visualizer) {
+                window.app.visualizer.updateColors(r, g, b);
+            }
         };
     }
 
@@ -236,10 +375,30 @@ export class UI {
             this.playPauseIcon.classList.remove('fa-play');
             this.playPauseIcon.classList.add('fa-pause');
             this.playPauseBtn.classList.add('playing');
+            if (this.npPlayPauseIcon) {
+                this.npPlayPauseIcon.classList.remove('fa-play');
+                this.npPlayPauseIcon.classList.add('fa-pause');
+            }
         } else {
             this.playPauseIcon.classList.remove('fa-pause');
             this.playPauseIcon.classList.add('fa-play');
             this.playPauseBtn.classList.remove('playing');
+            if (this.npPlayPauseIcon) {
+                this.npPlayPauseIcon.classList.remove('fa-pause');
+                this.npPlayPauseIcon.classList.add('fa-play');
+            }
+        }
+
+        if (this.playerBar) {
+            if (document.body.classList.contains('mobile')) {
+                if (this.isPlayerActive) {
+                    this.playerBar.classList.remove('hidden');
+                } else {
+                    this.playerBar.classList.add('hidden');
+                }
+            } else {
+                this.playerBar.classList.remove('hidden');
+            }
         }
     }
 
@@ -250,10 +409,20 @@ export class UI {
             this.currentTimeEl.textContent = this.formatTime(currentTime);
             this.totalTimeEl.textContent = this.formatTime(duration);
 
+            if (this.npProgressBar) {
+                this.npProgressBar.max = duration;
+                this.npProgressBar.value = currentTime;
+            }
+            if (this.npCurrentTimeEl) this.npCurrentTimeEl.textContent = this.formatTime(currentTime);
+            if (this.npTotalTimeEl) this.npTotalTimeEl.textContent = this.formatTime(duration);
+
             // Dynamic heartbeat wave progress coloring (using CSS masks for the waveform)
             const percentage = (currentTime / duration) * 100;
             this.progressBar.style.setProperty('--progress-percent', `${percentage}%`);
             
+            if (this.npProgressBar) {
+                this.npProgressBar.style.setProperty('--progress-percent', `${percentage}%`);
+            }
             // If the duration is known, we can also update the mask size dynamically if needed, 
             // but the current repeat-x logic in CSS is usually sufficient.
         }
@@ -286,27 +455,38 @@ export class UI {
 
     updateShuffleUI(isActive) {
         const btn = document.getElementById('shuffle-btn');
+        const npBtn = document.getElementById('np-shuffle-btn');
         if (btn) {
             if (isActive) btn.classList.add('active');
             else btn.classList.remove('active');
+        }
+        if (npBtn) {
+            if (isActive) npBtn.classList.add('active');
+            else npBtn.classList.remove('active');
         }
     }
 
     updateRepeatUI(mode) {
         const btn = document.getElementById('repeat-btn');
-        const icon = btn.querySelector('i');
-        if (btn && icon) {
-            btn.classList.remove('active');
-            icon.className = 'fas fa-redo-alt'; // default
+        const npBtn = document.getElementById('np-repeat-btn');
+        const icon = btn ? btn.querySelector('i') : null;
+        const npIcon = npBtn ? npBtn.querySelector('i') : null;
+
+        const updateBtn = (b, i) => {
+            if (!b || !i) return;
+            b.classList.remove('active');
+            i.className = 'fas fa-redo-alt'; // default
             
             if (mode === 'all') {
-                btn.classList.add('active');
+                b.classList.add('active');
             } else if (mode === 'one') {
-                btn.classList.add('active');
-                icon.className = 'fas fa-redo'; // Slightly different icon or add a '1' badge
-                // Since I can't easily add a badge without more HTML, changing class is enough if styled
+                b.classList.add('active');
+                i.className = 'fas fa-redo'; // Slightly different icon or add a '1' badge
             }
-        }
+        };
+
+        updateBtn(btn, icon);
+        updateBtn(npBtn, npIcon);
     }
 
     showError(msg) {

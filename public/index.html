@@ -3,13 +3,21 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Youtube Music Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Allu Player — A premium Spotify-inspired YouTube Music Player with beautiful UI and mobile support.">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Allu Player — Music</title>
     <link rel="stylesheet" href="css/styles.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Chart.js for Admin Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -17,93 +25,437 @@
         <!-- Cinematic Ambient Background -->
         <div class="ambient-bg"></div>
         <div class="ambient-light-system"></div>
+        <!-- Top-right admin greeting -->
+        <div class="top-right-greeting hidden" id="admin-greeting" aria-hidden="true">
+            <div class="greet-avatar" id="admin-greet-avatar">
+                <span id="admin-greet-initial">U</span>
+            </div>
+            <div class="greet-text">
+                <div class="greet-line" id="admin-greet-line">Good morning <span class="greet-emoji">☀️</span></div>
+                <div class="greet-name" id="admin-greet-name">admin</div>
+            </div>
+        </div>
 
-        <!-- Sidebar -->
+        <!-- Sidebar / Bottom Tab Bar -->
         <aside class="sidebar">
             <div class="logo">
                 <i class="fab fa-youtube"></i>
-                <span>ALLU PLAYER</span>
+                <span>Allu Player</span>
             </div>
-
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" data-target="home-view">
-                    <i class="fas fa-home"></i> Home
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
                 </a>
                 <a href="#" class="nav-item" data-target="search-view">
-                    <i class="fas fa-search"></i> Search
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </a>
+                <a href="#" class="nav-item" data-target="movies-view">
+                    <i class="fas fa-compass"></i>
+                    <span>Discover</span>
                 </a>
                 <a href="#" class="nav-item" data-target="playlists-view">
-                    <i class="fas fa-list-ul"></i> Playlists
+                    <i class="fas fa-layer-group"></i>
+                    <span>Library</span>
                 </a>
-                <a href="#" class="nav-item" data-target="favorites-view">
-                    <i class="fas fa-heart"></i> Favorites
+                <a href="#" class="nav-item desktop-only" data-target="favorites-view">
+                    <i class="fas fa-heart"></i>
+                    <span>Liked</span>
                 </a>
-                <a href="#" class="nav-item" id="nav-logout" style="margin-top: 16px; color: var(--danger);">
+                <a href="#" class="nav-item desktop-only hidden" data-target="admin-view" id="nav-admin">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin Panel</span>
+                </a>
+                
+                <!-- Current User Profile Widget / Link -->
+                <a href="#" class="nav-item user-profile-widget" data-target="profile-view" id="user-profile-widget">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; text-transform: uppercase; flex-shrink: 0; position: relative; overflow: hidden;" id="user-avatar-container" title="Click to upload profile picture">
+                        <span id="user-avatar-initial">U</span>
+                    </div>
+                    <span style="font-weight: 600; font-size: 13px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-family: 'Inter', sans-serif;" id="user-display-name">Guest</span>
+                </a>
+                <input type="file" id="profile-pic-upload" accept="image/*" style="display: none;">
+
+                <a href="#" class="nav-item desktop-only" id="nav-logout" style="margin-top: 0;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Log Out</span>
                 </a>
             </nav>
-
-            <!-- Removed API Key section as we use a local ytmusicapi proxy now -->
-            <!-- <div class="api-key-section">
-                <input type="password" id="api-key-input" placeholder="Enter your YouTube API Key" autocomplete="new-password" data-lpignore="true" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');">
-                <button id="save-api-key" class="btn-primary">Save</button>
-            </div> -->
         </aside>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Search View -->
             <section id="search-view" class="view-section hidden">
+                <div class="page-header">
+                    <h2 class="page-title"><i class="fas fa-search page-title-icon"></i> Search</h2>
+                </div>
                 <div class="search-container">
-                    <div class="search-bar">
+                    <div class="search-bar search-bar-full">
                         <i class="fas fa-search"></i>
-                        <input type="text" id="search-input" placeholder="Search for songs or artists...">
+                        <input type="text" id="search-input" placeholder="What do you want to listen to?">
                     </div>
                 </div>
                 <div class="loader hidden" id="search-loader"></div>
+                <p class="search-hint" id="search-hint">Start typing to find songs, artists and more...</p>
                 <div class="results-grid" id="search-results"></div>
             </section>
 
-            <!-- Home View (Recently Played) -->
-            <section id="home-view" class="view-section active">
-                <div class="spotify-import-section" style="margin-bottom: 30px; display: flex; gap: 12px; align-items: center; background: rgba(29, 185, 84, 0.05); padding: 12px 20px; border-radius: 100px; border: 1px solid rgba(29, 185, 84, 0.2); backdrop-filter: blur(10px); transition: border-color 0.3s ease; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
-                    <i class="fab fa-spotify" style="color: #1DB954; font-size: 26px; filter: drop-shadow(0 0 10px rgba(29, 185, 84, 0.4));"></i>
-                    <input type="text" id="spotify-input" placeholder="Paste Spotify Playlist Link..." style="flex: 1; padding: 12px 20px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: white; font-family: inherit; font-size: 14px; outline: none; transition: all 0.3s ease;" onfocus="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(29, 185, 84, 0.5)';" onblur="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.1)';">
-                    <button id="spotify-import-btn" style="padding: 12px 32px; border-radius: 100px; background: #1DB954; color: #000; font-weight: 700; font-family: 'Syne', sans-serif; font-size: 14px; letter-spacing: 0.5px; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);" onmouseover="this.style.transform='scale(1.05)'; this.style.background='#1ed760'; this.style.boxShadow='0 6px 20px rgba(29, 185, 84, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.background='#1DB954'; this.style.boxShadow='0 4px 15px rgba(29, 185, 84, 0.3)';">Import</button>
-                    <div id="spotify-loader" class="loader hidden" style="width: 24px; height: 24px; border-color: rgba(29, 185, 84, 0.3); border-top-color: #1DB954;"></div>
+            <!-- Discover View -->
+            <section id="movies-view" class="view-section hidden">
+                <!-- Discover Search Bar -->
+                <div class="search-container">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="discover-search-input" placeholder="Search fresh tracks and artists...">
+                    </div>
                 </div>
-                
-                <h2>Recently Played</h2>
-                <div class="results-grid" id="recent-results"></div>
+
+                <!-- Discover Hero Banner -->
+                <div class="hero-banner" id="discover-hero-banner">
+                    <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=120&q=80" class="hero-bg" id="discover-hero-bg" alt="Discover background" onerror="this.src='https://placehold.co/900x500/111827/94a3b8?text=Discover+Music'">
+                    <div class="hero-overlay"></div>
+                    <div class="hero-content">
+                        <h1 class="hero-title" id="discover-hero-title">Discover New Beats</h1>
+                        <p class="hero-desc" id="discover-hero-desc">Explore your next favorite song with curated recommendations made for your taste.</p>
+                        <div class="hero-actions">
+                            <button class="hero-btn" id="discover-hero-play"><i class="fas fa-play"></i> Play Top Pick</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header-row">
+                    <h2 id="discover-section-title">Daily Discover</h2>
+                </div>
+
+                <div class="loader hidden" id="discover-loader"></div>
+                <div class="results-grid" id="discover-results"></div>
+            </section>
+
+            <!-- Home View -->
+            <section id="home-view" class="view-section active">
+                <!-- Welcome Hero Banner -->
+                <div class="home-hero">
+                    <div class="home-hero-left">
+                        <div class="home-avatar-wrap" id="home-avatar">U</div>
+                        <div class="home-hero-text">
+                            <p class="home-time-label">Good evening</p>
+                            <h1 class="home-greeting-name" id="home-greeting">Welcome back, Guest</h1>
+                        </div>
+                    </div>
+                    <!-- Spotify Import -->
+                    <div class="home-spotify-bar">
+                        <i class="fab fa-spotify home-spotify-icon"></i>
+                        <input type="text" id="spotify-input" placeholder="Paste Spotify Playlist link..." class="home-spotify-input">
+                        <button id="spotify-import-btn" class="home-spotify-btn">Import</button>
+                        <div id="spotify-loader" class="loader hidden" style="width:18px;height:18px;margin:0;border-color:rgba(29,185,84,0.3);border-top-color:#1DB954;flex-shrink:0;"></div>
+                    </div>
+                </div>
+
+                <!-- Home Sections -->
+                <div class="home-sections">
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:var(--accent)"><i class="fas fa-history"></i></span>
+                            <h2 class="home-section-title">Recently Played</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="recent-results" aria-label="Scroll recently played left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="recent-results" aria-label="Scroll recently played right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="recent-results"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#ef4444"><i class="fas fa-fire"></i></span>
+                            <h2 class="home-section-title">Popular Songs</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-popular-songs" aria-label="Scroll popular songs left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-popular-songs" aria-label="Scroll popular songs right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-popular-songs"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#f59e0b"><i class="fas fa-star"></i></span>
+                            <h2 class="home-section-title">Top Artists</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-top-artists" aria-label="Scroll top artists left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-top-artists" aria-label="Scroll top artists right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-top-artists"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#ec4899"><i class="fas fa-heart"></i></span>
+                            <h2 class="home-section-title">Most Liked Songs</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-most-liked" aria-label="Scroll most liked songs left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-most-liked" aria-label="Scroll most liked songs right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-most-liked"></div>
+                    </div>
+                </div>
             </section>
 
             <!-- Favorites View -->
             <section id="favorites-view" class="view-section hidden">
-                <h2>Your Favorites</h2>
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <div class="page-icon-badge" style="background: rgba(236,72,153,0.15); color: #ec4899;"><i class="fas fa-heart"></i></div>
+                        <div>
+                            <h2 class="page-title" style="margin:0;">Liked Songs</h2>
+                            <p class="page-subtitle" id="favorites-count">Your saved tracks</p>
+                        </div>
+                    </div>
+                    <button id="play-all-favorites-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
+                </div>
                 <div class="results-grid" id="favorites-results"></div>
             </section>
 
             <!-- Playlists View -->
             <section id="playlists-view" class="view-section hidden">
-                <h2>Saved Playlists</h2>
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <div class="page-icon-badge" style="background: rgba(29,185,84,0.15); color: var(--accent);"><i class="fas fa-book"></i></div>
+                        <div>
+                            <h2 class="page-title" style="margin:0;">Your Library</h2>
+                            <p class="page-subtitle">All your playlists</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="results-grid" id="playlists-results"></div>
             </section>
 
             <!-- Playlist Detail View -->
             <section id="playlist-detail-view" class="view-section hidden">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-                    <button id="back-to-playlists-btn" class="icon-btn tooltip-btn" title="Back to Playlists" style="font-size: 20px;"><i class="fas fa-arrow-left"></i></button>
-                    <h2 id="detail-playlist-title" style="margin: 0;">Playlist Details</h2>
-                    <button id="play-all-detail-btn" class="btn-primary" style="margin-left: auto;"><i class="fas fa-play"></i> Play All</button>
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <button id="back-to-playlists-btn" class="icon-btn page-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                        <h2 id="detail-playlist-title" class="page-title" style="margin:0;">Playlist</h2>
+                    </div>
+                    <button id="play-all-detail-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
                 </div>
                 <div class="results-grid" id="playlist-detail-results"></div>
             </section>
 
+            <!-- Admin View -->
+            <section id="admin-view" class="view-section hidden">
+                <div class="section-header-row" style="margin-bottom: 24px;">
+                    <h2 style="margin: 0; font-family: 'Outfit', sans-serif;">Admin Dashboard</h2>
+                    <button id="admin-clear-logs-btn" class="btn-primary" style="background: var(--danger); font-size: 13px; padding: 8px 16px;"><i class="fas fa-trash-alt"></i> Clear Activity Logs</button>
+                </div>
+
+                <!-- Stats Grid Row -->
+                <div class="admin-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px;">
+                    <!-- Stat 1 -->
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-card);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(29, 185, 84, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 20px; flex-shrink: 0;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Total Users</div>
+                            <div id="admin-stat-users" style="font-size: 24px; font-weight: 800; font-family: 'Outfit', sans-serif; margin-top: 2px;" data-counter-target>0</div>
+                        </div>
+                    </div>
+                    <!-- Stat 2 -->
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-card);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: #a78bfa; font-size: 20px; flex-shrink: 0;">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Total Plays</div>
+                            <div id="admin-stat-plays" style="font-size: 24px; font-weight: 800; font-family: 'Outfit', sans-serif; margin-top: 2px;" data-counter-target>0</div>
+                        </div>
+                    </div>
+                    <!-- Stat 3 -->
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-card);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(245, 158, 11, 0.1); display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 20px; flex-shrink: 0;">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Playlists</div>
+                            <div id="admin-stat-playlists" style="font-size: 24px; font-weight: 800; font-family: 'Outfit', sans-serif; margin-top: 2px;" data-counter-target>0</div>
+                        </div>
+                    </div>
+                    <!-- Stat 4 -->
+                    <div style="background: var(--bg-card); padding: 20px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-card);">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(233, 20, 41, 0.1); display: flex; align-items: center; justify-content: center; color: var(--danger); font-size: 20px; flex-shrink: 0;">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Liked Songs</div>
+                            <div id="admin-stat-likes" style="font-size: 24px; font-weight: 800; font-family: 'Outfit', sans-serif; margin-top: 2px;" data-counter-target>0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="admin-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                    <!-- Activity Timeline -->
+                    <div style="background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Activity Timeline</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chart-activity-timeline"></canvas>
+                        </div>
+                    </div>
+                    <!-- Engagement Donut -->
+                    <div style="background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">User Engagement</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chart-engagement-donut"></canvas>
+                        </div>
+                    </div>
+                    <!-- Top Artists -->
+                    <div style="background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Most Played Artists</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chart-top-artists"></canvas>
+                        </div>
+                    </div>
+                    <!-- Listening Heatmap -->
+                    <div style="background: var(--bg-card); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary);">Listening Hours</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chart-listening-heatmap"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Section: Splits Directory and Logs -->
+                <div class="admin-middle-section" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; align-items: start;">
+                    <!-- User Directory Card -->
+                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); padding: 24px; box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-folder-open" style="color: var(--accent);"></i> User Directory
+                        </h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); font-weight: 600;">
+                                        <th style="padding: 12px 8px;">User</th>
+                                        <th style="padding: 12px 8px;">Registered</th>
+                                        <th style="padding: 12px 8px; text-align: center;">Playlists</th>
+                                        <th style="padding: 12px 8px; text-align: center;">Likes</th>
+                                        <th style="padding: 12px 8px; text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-table-body">
+                                    <!-- User rows generated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Live Log Console Card -->
+                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); padding: 24px; box-shadow: var(--shadow-elevated); height: 420px; display: flex; flex-direction: column;">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-terminal" style="color: #a78bfa;"></i> Live Activity Logs
+                        </h3>
+                        <div id="admin-logs-console" style="flex: 1; background: #07070a; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.03); padding: 12px; font-family: monospace; font-size: 11px; color: #a7f3d0; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; scrollbar-width: thin;">
+                            <!-- Log outputs -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Section: Leaderboards -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- Top Liked Songs -->
+                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); padding: 24px; box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-trophy" style="color: #fbbf24;"></i> Popular Liked Songs
+                        </h3>
+                        <div id="admin-top-songs" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Top songs list -->
+                        </div>
+                    </div>
+
+                    <!-- Most Active Users -->
+                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05); padding: 24px; box-shadow: var(--shadow-elevated);">
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-chart-line" style="color: var(--accent);"></i> Top Active Users
+                        </h3>
+                        <div id="admin-top-users" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Top users list -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile View -->
+            <section id="profile-view" class="view-section hidden">
+                <div class="profile-header-card" style="display: flex; align-items: center; gap: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 32px; border-radius: 16px; margin-bottom: 32px; flex-wrap: wrap;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 32px; text-transform: uppercase; cursor: pointer; overflow: hidden; position: relative;" id="profile-page-avatar" title="Click to upload profile picture">U</div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <h1 id="profile-page-username" style="font-size: 28px; font-weight: 800; margin: 0; font-family: 'Outfit', sans-serif;">Username</h1>
+                        <p id="profile-page-joined" style="font-size: 13px; color: var(--text-secondary); margin: 4px 0 16px 0;">Member since --</p>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <button id="profile-logout-btn" class="btn-primary" style="background: var(--danger); font-size: 12px; padding: 6px 12px;"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+                            <button id="profile-admin-btn" class="btn-primary hidden" style="background: var(--accent); color: #000; font-size: 12px; padding: 6px 12px;"><i class="fas fa-user-shield"></i> Admin Panel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-layout-grid">
+                    <!-- Left: User stats & activity -->
+                    <div class="profile-activity-side">
+                        <h2>Your Statistics</h2>
+                        <div class="profile-stats-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px;">
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800; color: var(--accent);" id="profile-stat-plays">0</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;">Total Plays</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800; color: var(--accent);" id="profile-stat-likes">0</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;">Liked Songs</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 800; color: var(--accent);" id="profile-stat-playlists">0</div>
+                                <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-top: 4px;">Playlists</div>
+                            </div>
+                        </div>
+
+                        <h2>Recent Activity</h2>
+                        <div class="horizontal-scroll-row" id="profile-recent-activity" style="margin-bottom: 32px;"></div>
+
+                        <h2>Your Most Liked</h2>
+                        <div class="horizontal-scroll-row" id="profile-most-liked" style="margin-bottom: 32px;"></div>
+
+                        <h2>Your Top Artists</h2>
+                        <div class="horizontal-scroll-row" id="profile-top-artists" style="margin-bottom: 32px;"></div>
+
+                        <h2>Your Popular Songs</h2>
+                        <div class="horizontal-scroll-row" id="profile-popular-songs" style="margin-bottom: 32px;"></div>
+                    </div>
+
+                    <!-- Right: Account Settings -->
+                    <div class="profile-settings-side" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 24px; border-radius: 16px;">
+                        <h3 style="margin-top: 0; font-family: 'Outfit', sans-serif;">Account Settings</h3>
+                        <div class="auth-form" style="margin-top: 16px;">
+                            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">Change Password</label>
+                            <input type="password" id="profile-old-pass" placeholder="Current Password" style="margin-bottom: 12px; width: 100%;">
+                            <input type="password" id="profile-new-pass" placeholder="New Password" style="margin-bottom: 16px; width: 100%;">
+                            <p id="profile-settings-error" class="auth-error hidden" style="margin-bottom: 12px;"></p>
+                            <p id="profile-settings-success" style="color: var(--accent); font-size: 13px; text-align: center; margin-bottom: 12px;" class="hidden"></p>
+                            <button type="button" id="profile-save-btn" class="btn-primary auth-submit" style="width: 100%;">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Fullscreen Now Playing View -->
             <section id="now-playing-view" class="view-section hidden now-playing-overlay">
-                <!-- Animated gradient backdrop -->
+                <!-- Animated gradient backdrop & visualizer -->
                 <div class="np-backdrop"></div>
+                <canvas id="visualizer-canvas" style="position: absolute; inset: 0; z-index: 1; pointer-events: none; width: 100%; height: 100%;"></canvas>
+
 
                 <div class="np-header">
                     <div class="np-logo">NOW PLAYING</div>
@@ -118,7 +470,7 @@
                             <div class="np-art-wrapper" style="position: relative;">
                                 <div class="np-art-glow"></div>
                                 <img id="np-large-art" src="" alt="Album Art">
-                                <div id="ytplayer" style="position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 10;"></div>
+                                <div id="ytplayer" style="position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 10; opacity: 0.01; pointer-events: none;"></div>
                             </div>
                         </div>
 
@@ -131,11 +483,11 @@
                             <!-- Inline controls for the NP view -->
                             <div class="np-controls">
                                 <div class="np-progress-row">
-                                    <span class="np-time np-current-time">0:00</span>
-                                    <div class="np-progress-track">
-                                        <div class="np-progress-fill"></div>
+                                    <span class="np-time np-current-time" id="np-current-time">0:00</span>
+                                    <div class="progress-container mobile-top-progress" style="position: relative; width: 100%; top: 0; left: 0; transform: none; flex: 1; margin: 0;">
+                                        <input type="range" class="progress-bar" id="np-progress-bar" value="0" min="0" max="100">
                                     </div>
-                                    <span class="np-time np-total-time">0:00</span>
+                                    <span class="np-time np-total-time" id="np-total-time">0:00</span>
                                 </div>
                                 <div class="np-control-buttons">
                                     <button class="np-ctrl-btn" id="np-shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
@@ -147,16 +499,28 @@
                             </div>
 
                             <div class="np-actions-row">
-                                <button class="np-action-btn" id="np-fav-btn" title="Add to Favorites"><i class="far fa-heart"></i></button>
+                                <button class="np-action-btn" id="np-fav-btn" title="Add to Liked Songs"><i class="far fa-heart"></i></button>
+                                <button class="np-action-btn" id="np-lyrics-btn" title="Lyrics"><i class="fas fa-microphone"></i></button>
                                 <button class="np-action-btn" id="np-share-btn" title="Share"><i class="fas fa-share-alt"></i></button>
                                 <button class="np-action-btn" id="np-queue-btn" title="Add to Queue"><i class="fas fa-list-ul"></i></button>
                             </div>
                         </div>
                     </div>
                 </main>
+                
+                <!-- Lyrics Panel -->
+                <div id="lyrics-panel" class="lyrics-panel">
+                    <div class="lyrics-header">
+                        <h2>Lyrics</h2>
+                        <button id="lyrics-close-btn" class="icon-btn" style="color: var(--text-primary); font-size: 20px;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="lyrics-content" class="lyrics-content-area">
+                        <!-- Lyrics will be injected here -->
+                    </div>
+                </div>
             </section>
         </main>
-        
+
         <!-- Bottom Player Bar -->
         <footer class="player-bar">
             <!-- Left: Info -->
@@ -177,9 +541,6 @@
 
             <!-- Middle: Controls -->
             <div class="player-center">
-                <div class="progress-container mobile-top-progress">
-                    <input type="range" class="progress-bar" id="progress-bar" value="0" min="0" max="100">
-                </div>
                 <div class="control-buttons">
                     <button class="icon-btn tooltip-btn shuffle-btn" id="shuffle-btn" title="Shuffle"><i class="fas fa-random"></i></button>
                     <button class="icon-btn prev-next-btn" id="prev-btn"><i class="fas fa-step-backward"></i></button>
@@ -188,8 +549,9 @@
                     <button class="icon-btn prev-next-btn" id="next-btn"><i class="fas fa-step-forward"></i></button>
                     <button class="icon-btn tooltip-btn repeat-btn" id="repeat-btn" title="Repeat"><i class="fas fa-redo-alt"></i></button>
                 </div>
-                <div class="time-info desktop-only">
+                <div class="progress-container">
                     <span class="time current-time" id="current-time">0:00</span>
+                    <input type="range" class="progress-bar" id="progress-bar" value="0" min="0" max="100">
                     <span class="time total-time" id="total-time">0:00</span>
                 </div>
             </div>
@@ -200,10 +562,10 @@
                 <button class="icon-btn tooltip-btn" id="queue-btn" title="Queue"><i class="fas fa-list-ul"></i></button>
                 <button class="icon-btn tooltip-btn" id="connect-btn" title="Connect to Device"><i class="fas fa-laptop-house"></i></button>
                 <div class="volume-controls">
-                    <i class="fas fa-volume-up" id="volume-icon" style="cursor:pointer;" title="Mute"></i>
+                    <i class="fas fa-volume-up" id="volume-icon" style="cursor:pointer; color: var(--text-secondary); font-size: 16px;" title="Mute"></i>
                     <input type="range" class="volume-slider" id="volume-slider" value="100" min="0" max="100">
                 </div>
-                <button class="icon-btn tooltip-btn" id="fs-toggle-btn" title="Fullscreen"><i class="fas fa-expand-alt"></i></button>
+                <button class="icon-btn tooltip-btn" id="fs-toggle-btn" title="Now Playing"><i class="fas fa-expand-alt"></i></button>
             </div>
         </footer>
     </div>
@@ -215,10 +577,17 @@
         </video>
         <div class="auth-video-overlay"></div>
         <div class="auth-card">
-            <h1 class="auth-title">Welcome to YT Music Player</h1>
-            <p class="auth-subtitle" id="auth-subtitle">Log in to view your playlists</p>
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle" id="auth-subtitle">Log in to continue listening</p>
 
             <form id="auth-form" class="auth-form">
+                <div id="auth-profile-pic-container" class="hidden" style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative;" id="reg-avatar-preview" title="Upload Profile Picture">
+                        <i class="fas fa-camera" style="color: var(--text-muted); font-size: 24px;"></i>
+                    </div>
+                    <span style="font-size: 12px; color: var(--text-muted);">Add Photo</span>
+                    <input type="file" id="reg-profile-pic" accept="image/*" style="display: none;">
+                </div>
                 <input type="text" id="auth-username" placeholder="Username" required autocomplete="username">
                 <input type="password" id="auth-password" placeholder="Password" required
                     autocomplete="current-password">
@@ -232,9 +601,89 @@
         </div>
     </div>
 
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="auth-overlay hidden" style="z-index: 10500;">
+        <div class="auth-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 24px;">Settings</h2>
+                <button id="close-settings-btn" class="icon-btn tooltip-btn" title="Close" style="color: var(--text-primary); font-size: 20px;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="auth-form">
+                <!-- Profile Picture Management Section -->
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 20px;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; font-weight: 800; font-size: 32px; text-transform: uppercase;" id="settings-avatar-preview" title="Change Profile Picture">
+                        U
+                    </div>
+                    <span style="font-size: 13px; color: var(--text-secondary); cursor: pointer;" id="settings-avatar-change-text">Change Profile Picture</span>
+                </div>
+
+                <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Change Password</h3>
+                <input type="password" id="settings-old-pass" placeholder="Current Password">
+                <input type="password" id="settings-new-pass" placeholder="New Password">
+                <p id="settings-error" class="auth-error hidden"></p>
+                <p id="settings-success" style="color: var(--accent); font-size: 13px; text-align: center;" class="hidden"></p>
+                <button type="button" id="settings-save-btn" class="btn-primary auth-submit">Update Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Player Overlay -->
+    <div id="movie-player-overlay" class="movie-player-overlay hidden">
+        <div class="movie-player-header">
+            <h2 id="movie-player-title" style="margin-bottom: 0; font-size: 16px; -webkit-text-fill-color: #fff;">Playing Movie</h2>
+            <button id="close-movie-player" class="icon-btn tooltip-btn" title="Close" style="color: var(--text-primary); font-size: 20px;"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="movie-player-content">
+            <iframe id="movie-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- User Details Modal -->
+    <div id="admin-user-details-overlay" class="auth-overlay hidden" style="z-index: 10600;">
+        <div class="auth-card" style="max-width: 680px; width: 90%; max-height: 85vh; display: flex; flex-direction: column; padding: 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div id="admin-details-avatar" style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; text-transform: uppercase; overflow: hidden;">U</div>
+                    <div>
+                        <h2 id="admin-details-title" style="margin: 0; font-size: 22px; color: var(--text-primary); -webkit-text-fill-color: var(--text-primary);">User Profile</h2>
+                        <span id="admin-details-subtitle" style="font-size: 12px; color: var(--text-secondary);">Registered on --</span>
+                    </div>
+                </div>
+                <button id="close-admin-details-btn" class="icon-btn tooltip-btn" title="Close" style="color: var(--text-primary); font-size: 20px;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 24px; scrollbar-width: thin; text-align: left;">
+                <!-- Playlists Section -->
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-secondary);">Playlists</h3>
+                    <div id="admin-details-playlists" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- User Playlists -->
+                    </div>
+                </div>
+
+                <!-- Liked Songs Section -->
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-secondary);">Liked Songs</h3>
+                    <div id="admin-details-likes" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- User Likes -->
+                    </div>
+                </div>
+
+                <!-- Recently Played Section -->
+                <div>
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-secondary);">Recently Played</h3>
+                    <div id="admin-details-recents" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- User Recents -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
-    <script type="module" src="js/app.js?v=2"></script>
+    <script type="module" src="js/app.js?v=4"></script>
 </body>
 
 </html>

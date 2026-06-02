@@ -16,19 +16,14 @@ export class YouTubeAPI {
 
     async search(query, limit = 20) {
         try {
-            // For Netlify, the search function is at /api/search (via redirects)
-            const endpoint = (this.proxyUrl === '') ? '/api/search' : `${this.proxyUrl}/search`;
+            // For Netlify/static deployment the search endpoint is /api/search
+            const endpoint = (this.proxyUrl === '') ? '/search' : `${this.proxyUrl}/search`;
             const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=${limit}`);
             
-            let errorMessage = 'Error fetching from Proxy';
+            // If the backend returns an error (e.g., 404 from YTMusic), treat it as "no results"
             if (!response.ok) {
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || errorData.detail || errorMessage;
-                } catch (e) {
-                    errorMessage = `Server Error: ${response.status} ${response.statusText}`;
-                }
-                throw new Error(errorMessage);
+                console.warn('Search request failed with status', response.status);
+                return [];
             }
 
             const data = await response.json();
@@ -80,6 +75,23 @@ export class YouTubeAPI {
         }
     }
     
+    async getTrendingMovies(limit = 20, query = null) {
+        try {
+            const endpoint = (this.proxyUrl === '') ? '/api/movies/trending' : `${this.proxyUrl}/api/movies/trending`;
+            let url = `${endpoint}?limit=${limit}`;
+            if (query) {
+                url += `&q=${encodeURIComponent(query)}`;
+            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Failed to fetch movies");
+            const data = await response.json();
+            return data || [];
+        } catch (error) {
+            console.error('Movies fetch error:', error);
+            throw error;
+        }
+    }
+
     // Quick and dirty HTML entity decoder
     decodeHtml(html) {
         if (!html) return "";

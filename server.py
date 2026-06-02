@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from ytmusicapi import YTMusic
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import uvicorn
 import logging
 import os
 import re
+import json
+import requests as http_requests
 from dotenv import load_dotenv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -39,58 +40,196 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize YTMusic
-# In a real app, you might want to provide headers for authenticated requests,
-# but for search, unauthenticated usually works fine.
+# ---------------------------------------------------------------------------
+# Direct YouTube Music search (bypasses broken ytmusicapi v0.22.0)
+# ---------------------------------------------------------------------------
+YTM_BASE = "https://music.youtube.com"
+YTM_SEARCH_EP = YTM_BASE + "/youtubei/v1/search"
+YTM_PARAMS = {"prettyPrint": "false"}
+YTM_CONTEXT = {
+    "client": {
+        "clientName": "WEB_REMIX",
+        "clientVersion": "1.20231204.01.00",
+        "hl": "en",
+        "gl": "IN",
+    }
+}
+
+def ytm_search(query, limit=20):
+    """Search YouTube Music directly via their internal API."""
+    payload = {
+        "context": YTM_CONTEXT,
+        "query": query,
+        "params": "EgWKAQIIAWoOEAMQBBAJEAoQBRAREBU%3D",  # filter = songs
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Origin": YTM_BASE,
+        "Referer": YTM_BASE + "/",
+    }
+    resp = http_requests.post(YTM_SEARCH_EP, params=YTM_PARAMS,
+                              headers=headers, json=payload, timeout=15)
+    resp.raise_for_status()
+    data = resp.json()
+
+    results = []
+    try:
+        tabs = data.get("contents", {}).get("tabbedSearchResultsRenderer", {}).get("tabs", [])
+        if not tabs:
+            # Alternate layout
+            section_list = data.get("contents", {}).get("sectionListRenderer", {})
+        else:
+            section_list = tabs[0].get("tabRenderer", {}).get("content", {}).get("sectionListRenderer", {})
+
+        for section in section_list.get("contents", []):
+            shelf = section.get("musicShelfRenderer", {})
+            for item in shelf.get("contents", []):
+                flex_cols = item.get("musicResponsiveListItemRenderer", {}).get("flexColumns", [])
+                if not flex_cols:
+                    continue
+
+                # Title from first column
+                title_runs = flex_cols[0].get("musicResponsiveListItemFlexColumnRenderer", {}).get("text", {}).get("runs", [])
+                title = title_runs[0].get("text", "") if title_runs else ""
+
+                # Video ID from navigation endpoint
+                video_id = None
+                overlay = item.get("musicResponsiveListItemRenderer", {}).get("overlay", {})
+                play_btn = overlay.get("musicItemThumbnailOverlayRenderer", {}).get("content", {}).get("musicPlayButtonRenderer", {})
+                nav = play_btn.get("playNavigationEndpoint", {})
+                video_id = nav.get("watchEndpoint", {}).get("videoId")
+                
+                if not video_id and title_runs:
+                    nav2 = title_runs[0].get("navigationEndpoint", {})
+                    video_id = nav2.get("watchEndpoint", {}).get("videoId")
+
+                if not video_id:
+                    continue
+
+                # Artist from second column
+                artist = "Unknown Artist"
+                if len(flex_cols) > 1:
+                    artist_runs = flex_cols[1].get("musicResponsiveListItemFlexColumnRenderer", {}).get("text", {}).get("runs", [])
+                    artist_parts = [r.get("text", "") for r in artist_runs if r.get("text", "") not in ("•", " • ", " ")]
+                    if artist_parts:
+                        artist = artist_parts[0]
+
+                # Thumbnail
+                thumb = ""
+                thumb_renderer = item.get("musicResponsiveListItemRenderer", {}).get("thumbnail", {}).get("musicThumbnailRenderer", {})
+                thumbs = thumb_renderer.get("thumbnail", {}).get("thumbnails", [])
+                if thumbs:
+                    thumb = get_hq_thumbnail(thumbs[-1].get("url", ""))
+
+                results.append({
+                    "id": video_id,
+                    "title": title,
+                    "channelTitle": artist,
+                    "thumbnail": thumb,
+                })
+                if len(results) >= limit:
+                    break
+            if len(results) >= limit:
+                break
+    except Exception as e:
+        logger.error(f"Error parsing YTM response: {e}")
+
+    return results
+
+# Keep a YTMusic instance alive for Spotify import (it may still work for that)
 try:
+    from ytmusicapi import YTMusic
     yt = YTMusic()
-    logger.info("YTMusic initialized successfully")
+    logger.info("YTMusic (legacy) initialized for Spotify import")
 except Exception as e:
-    logger.error(f"Failed to initialize YTMusic: {e}")
+    logger.warning(f"YTMusic (legacy) init failed – Spotify import will use direct search: {e}")
     yt = None
 
 @app.get("/search")
 async def search(q: str = Query(...), limit: int = 20):
-    if not yt:
-        raise HTTPException(status_code=500, detail="YTMusic not initialized")
-    
     try:
         logger.info(f"Searching for: {q}")
-        # Search for songs
-        results = yt.search(q, filter="songs", limit=limit)
-        
-        # Map to the format expected by the frontend
-        # Front-end expects: { id, title, channelTitle, thumbnail }
-        mapped_results = []
-        for item in results:
-            # ytmusicapi search results for 'songs' usually have 'videoId', 'title', 'artists', 'thumbnails'
-            video_id = item.get("videoId")
-            if not video_id:
-                continue
-                
-            artists = item.get("artists", [])
-            artist_names = [a.get("name") for a in artists if a.get("name")]
-            channel_title = ", ".join(artist_names) if artist_names else "Unknown Artist"
-            
-            thumbnails = item.get("thumbnails", [])
-            thumbnail_url = get_hq_thumbnail(thumbnails[-1].get("url")) if thumbnails else ""
-            
-            mapped_results.append({
-                "id": video_id,
-                "title": item.get("title", "Unknown Title"),
-                "channelTitle": channel_title,
-                "thumbnail": thumbnail_url
-            })
-        
-        logger.info(f"Found {len(mapped_results)} results")
-        return mapped_results
+        results = ytm_search(q, limit=limit)
+        logger.info(f"Found {len(results)} results")
+        return results
     except Exception as e:
         logger.error(f"Search error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return []
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "ytmusic": "initialized" if yt else "failed"}
+
+@app.get("/api/movies/trending")
+async def get_movies(limit: int = 20, q: str = None, page: int = 1):
+    """Fetch movies from TMDB (no API key required for basic usage via proxy)."""
+    try:
+        TMDB_KEY = os.getenv("TMDB_API_KEY", "d4a7514dbba")  # Free public demo key
+        
+        # Try YTS first (it has IMDB codes directly)
+        try:
+            yts_url = f"https://yts.mx/api/v2/list_movies.json?limit={limit}&sort_by=download_count"
+            if q:
+                yts_url += f"&query_term={q}"
+            yts_res = http_requests.get(yts_url, timeout=8)
+            yts_data = yts_res.json()
+            if yts_data.get("status") == "ok":
+                movies = yts_data.get("data", {}).get("movies", [])
+                if movies and len(movies) > 0:
+                    logger.info(f"YTS returned {len(movies)} movies")
+                    return movies
+        except Exception as yts_err:
+            logger.warning(f"YTS failed, falling back to TMDB: {yts_err}")
+
+        # Fallback: Use TMDB
+        if q:
+            tmdb_url = f"https://api.themoviedb.org/3/search/movie?api_key={TMDB_KEY}&query={q}&page={page}"
+        else:
+            tmdb_url = f"https://api.themoviedb.org/3/trending/movie/week?api_key={TMDB_KEY}&page={page}"
+        
+        res = http_requests.get(tmdb_url, timeout=10)
+        data = res.json()
+        
+        results = data.get("results", [])
+        
+        # Map TMDB format to the format the frontend expects (YTS-like)
+        mapped = []
+        for m in results[:limit]:
+            mapped.append({
+                "id": m.get("id"),
+                "title": m.get("title", "Unknown"),
+                "year": (m.get("release_date") or "")[:4],
+                "rating": round(m.get("vote_average", 0), 1),
+                "summary": m.get("overview", ""),
+                "synopsis": m.get("overview", ""),
+                "imdb_code": None,  # Will be fetched on play
+                "tmdb_id": m.get("id"),
+                "medium_cover_image": f"https://image.tmdb.org/t/p/w300{m['poster_path']}" if m.get("poster_path") else "",
+                "large_cover_image": f"https://image.tmdb.org/t/p/w500{m['poster_path']}" if m.get("poster_path") else "",
+                "background_image_original": f"https://image.tmdb.org/t/p/original{m['backdrop_path']}" if m.get("backdrop_path") else "",
+                "background_image": f"https://image.tmdb.org/t/p/w1280{m['backdrop_path']}" if m.get("backdrop_path") else "",
+            })
+        
+        logger.info(f"TMDB returned {len(mapped)} movies")
+        return mapped
+    except Exception as e:
+        logger.error(f"Movie fetch error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/movies/{tmdb_id}/imdb")
+async def get_imdb_id(tmdb_id: int):
+    """Get IMDB ID for a TMDB movie (needed for embed player)."""
+    try:
+        TMDB_KEY = os.getenv("TMDB_API_KEY", "d4a7514dbba")
+        url = f"https://api.themoviedb.org/3/movie/{tmdb_id}/external_ids?api_key={TMDB_KEY}"
+        res = http_requests.get(url, timeout=10)
+        data = res.json()
+        return {"imdb_id": data.get("imdb_id")}
+    except Exception as e:
+        logger.error(f"IMDB lookup error: {e}")
+        return {"imdb_id": None}
+
 
 @app.post("/api/import_spotify")
 async def import_spotify(payload: dict):
@@ -144,24 +283,9 @@ async def import_spotify(payload: dict):
                 
                 search_query = f"{track_name} {artist_name}"
                 try:
-                    yt_results = yt.search(search_query, filter="songs", limit=1)
+                    yt_results = ytm_search(search_query, limit=1)
                     if yt_results:
-                        yt_song = yt_results[0]
-                        video_id = yt_song.get("videoId")
-                        if video_id:
-                            yt_artists = yt_song.get("artists", [])
-                            yt_artist_names = [a.get("name") for a in yt_artists if a.get("name")]
-                            channel_title = ", ".join(yt_artist_names) if yt_artist_names else artist_name
-                            
-                            thumbnails = yt_song.get("thumbnails", [])
-                            thumbnail_url = get_hq_thumbnail(thumbnails[-1].get("url")) if thumbnails else ""
-                            
-                            return {
-                                "id": video_id,
-                                "title": yt_song.get("title", track_name),
-                                "channelTitle": channel_title,
-                                "thumbnail": thumbnail_url
-                            }
+                        return yt_results[0]
                 except Exception as e:
                     logger.error(f"Error searching for '{search_query}' (Spotipy): {e}")
                 return None
@@ -237,25 +361,9 @@ async def import_spotify(payload: dict):
             search_query = search_query.replace('\xa0', ' ').replace('&amp;', '&')
             
             try:
-                yt_results = yt.search(search_query, filter="songs", limit=1)
-                
+                yt_results = ytm_search(search_query, limit=1)
                 if yt_results:
-                    yt_song = yt_results[0]
-                    video_id = yt_song.get("videoId")
-                    if video_id:
-                        yt_artists = yt_song.get("artists", [])
-                        yt_artist_names = [a.get("name") for a in yt_artists if a.get("name")]
-                        channel_title = ", ".join(yt_artist_names) if yt_artist_names else artist_name
-                        
-                        thumbnails = yt_song.get("thumbnails", [])
-                        thumbnail_url = get_hq_thumbnail(thumbnails[-1].get("url")) if thumbnails else ""
-                        
-                        return {
-                            "id": video_id,
-                            "title": yt_song.get("title", track_name),
-                            "channelTitle": channel_title,
-                            "thumbnail": thumbnail_url
-                        }
+                    return yt_results[0]
             except Exception as e:
                 logger.error(f"Error searching for '{search_query}': {e}")
             return None
@@ -284,9 +392,10 @@ async def import_spotify(payload: dict):
         logger.error(f"Error in Spotify fallback: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Serve static files (CSS and JS) from the public/ folder
+# Serve static files (CSS, JS, and Video) from the public/ folder
 app.mount("/css", StaticFiles(directory="public/css"), name="css")
 app.mount("/js", StaticFiles(directory="public/js"), name="js")
+app.mount("/video", StaticFiles(directory="public/video"), name="video")
 
 # Serve the index.html from the public/ folder
 @app.get("/")

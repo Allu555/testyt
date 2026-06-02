@@ -89,5 +89,54 @@ export const StorageUtils = {
         const playlists = StorageUtils.getSavedPlaylists();
         const updated = playlists.filter(p => p.id !== playlistId);
         StorageUtils.savePlaylists(updated);
+    },
+
+    getAdminLogs: () => {
+        try {
+            const logs = localStorage.getItem('ytpm_admin_logs');
+            return logs ? JSON.parse(logs) : [];
+        } catch (e) {
+            return [];
+        }
+    },
+
+    addAdminLog: (username, action, details) => {
+        try {
+            const logs = StorageUtils.getAdminLogs();
+            const newLog = {
+                timestamp: new Date().toISOString(),
+                username,
+                action,
+                details
+            };
+            logs.unshift(newLog);
+            if (logs.length > 200) logs.pop();
+            localStorage.setItem('ytpm_admin_logs', JSON.stringify(logs));
+        } catch (e) {
+            console.error('Failed to save admin log', e);
+        }
+    },
+
+    clearAdminLogs: () => {
+        try {
+            localStorage.setItem('ytpm_admin_logs', JSON.stringify([]));
+        } catch (e) {
+            console.error('Failed to clear admin logs', e);
+        }
+    },
+
+    deleteUserData: (username) => {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(username + '_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch (e) {
+            console.error('Failed to delete user data', e);
+        }
     }
 };
