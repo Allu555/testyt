@@ -1,7 +1,7 @@
 import { YouTubeAPI } from './api.js?v=7';
 import { Player } from './player.js?v=4';
 import { StorageUtils } from './storage.js?v=4';
-import { UI } from './ui.js?v=6';
+import { UI } from './ui.js?v=7';
 import { Auth } from './auth.js?v=4';
 import { AdminCharts } from './admin-charts.js';
 import { AudioVisualizer } from './visualizer.js';

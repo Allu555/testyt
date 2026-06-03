@@ -4176,3 +4176,83 @@ body.is-playing .play-pause-btn.playing {
         max-width: calc(100vw - 154px);
     }
 }
+
+/* Mobile player visibility fix: keep the mini player above the tab bar. */
+@media (max-width: 900px) {
+    body.mobile .main-content,
+    body.mobile.player-active .main-content {
+        padding-bottom: calc(var(--player-h) + 84px + env(safe-area-inset-bottom)) !important;
+    }
+
+    body.mobile .sidebar,
+    body.mobile.player-active .sidebar {
+        bottom: var(--player-h) !important;
+    }
+
+    body.mobile .player-bar,
+    body.mobile .player-bar.hidden {
+        position: fixed !important;
+        left: 8px !important;
+        right: 8px !important;
+        bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+        width: calc(100% - 16px) !important;
+        height: var(--player-h) !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto auto !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 8px 12px !important;
+        border-radius: 12px !important;
+        background: rgba(16, 16, 16, 0.96) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.58) !important;
+        z-index: 1450 !important;
+        overflow: hidden !important;
+    }
+
+    body.mobile .player-left {
+        min-width: 0;
+        margin-right: 0;
+    }
+
+    body.mobile .player-center {
+        display: flex !important;
+        width: auto !important;
+        flex: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.mobile .player-right {
+        display: flex !important;
+        width: auto !important;
+        min-width: 44px;
+    }
+
+    body.mobile .player-right #fs-toggle-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+    }
+
+    body.mobile .track-info {
+        max-width: calc(100vw - 184px);
+    }
+}
+
+@media (max-width: 380px) {
+    body.mobile .player-bar,
+    body.mobile .player-bar.hidden {
+        left: 6px !important;
+        right: 6px !important;
+        width: calc(100% - 12px) !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    body.mobile .track-info {
+        max-width: calc(100vw - 166px);
+    }
+}

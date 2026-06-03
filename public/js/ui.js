@@ -111,13 +111,7 @@ export class UI {
         document.body.classList.toggle('player-active', this.isPlayerActive);
         if (isMobile) {
             document.body.classList.add('mobile');
-            if (player) {
-                if (this.isPlayerActive) {
-                    player.classList.remove('hidden');
-                } else {
-                    player.classList.add('hidden');
-                }
-            }
+            if (player) player.classList.remove('hidden');
         } else {
             document.body.classList.remove('mobile');
             if (player) player.classList.remove('hidden');
@@ -396,11 +390,7 @@ export class UI {
         if (this.playerBar) {
             document.body.classList.toggle('player-active', this.isPlayerActive);
             if (document.body.classList.contains('mobile')) {
-                if (this.isPlayerActive) {
-                    this.playerBar.classList.remove('hidden');
-                } else {
-                    this.playerBar.classList.add('hidden');
-                }
+                this.playerBar.classList.remove('hidden');
             } else {
                 this.playerBar.classList.remove('hidden');
             }
