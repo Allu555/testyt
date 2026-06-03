@@ -1,4 +1,4 @@
-import { YouTubeAPI } from './api.js?v=6';
+import { YouTubeAPI } from './api.js?v=7';
 import { Player } from './player.js?v=4';
 import { StorageUtils } from './storage.js?v=4';
 import { UI } from './ui.js?v=4';
@@ -544,6 +544,41 @@ class App {
         this.ui.renderSongs(container, playlist.tracks, (song) => {
             this.playSong(song, playlist.tracks);
         });
+
+        this.hydrateImportedPlaylistImages(playlist);
+    }
+
+    async hydrateImportedPlaylistImages(playlist) {
+        const tracks = playlist.tracks || [];
+        if (playlist._hydratingImages || playlist.spotifyImagesHydrated || tracks.length < 2) return;
+
+        const thumbnails = tracks.map(track => track.thumbnail).filter(Boolean);
+        const repeatedThumbnail = thumbnails.length > 1 && new Set(thumbnails).size === 1;
+        const needsResolution = repeatedThumbnail || tracks.some(track => track.isSpotify && !track.id);
+        if (!needsResolution) return;
+
+        playlist._hydratingImages = true;
+        try {
+            for (const track of tracks) {
+                if (!track.title) continue;
+                await this.resolvePlayableSong(track, { forceThumbnail: repeatedThumbnail });
+            }
+
+            playlist.spotifyImagesHydrated = true;
+            playlist._hydratingImages = false;
+            StorageUtils.savePlaylists(StorageUtils.getSavedPlaylists().map(saved => (
+                saved.id === playlist.id ? playlist : saved
+            )));
+
+            if (this.currentViewedPlaylist && this.currentViewedPlaylist.id === playlist.id) {
+                this.renderPlaylistDetail(playlist);
+            }
+            this.renderPlaylists();
+        } catch (err) {
+            console.warn('Could not refresh imported playlist images:', err);
+        } finally {
+            playlist._hydratingImages = false;
+        }
     }
 
     renderImportedPlaylist(songs) {
@@ -1891,7 +1926,7 @@ class App {
         return [...new Set(queries)];
     }
 
-    async resolvePlayableSong(song) {
+    async resolvePlayableSong(song, options = {}) {
         const candidates = [];
         const seenIds = new Set();
 
@@ -1910,7 +1945,9 @@ class App {
         const [best, ...fallbacks] = candidates;
         song.id = best.id;
         song.fallbackIds = fallbacks.map(result => result.id);
-        if (!song.thumbnail && best.thumbnail) song.thumbnail = best.thumbnail;
+        if ((!song.thumbnail || options.forceThumbnail || song.isSpotify) && best.thumbnail) {
+            song.thumbnail = best.thumbnail;
+        }
         this.persistResolvedSong(song);
         return true;
     }
