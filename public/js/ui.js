@@ -108,6 +108,7 @@ export class UI {
     applyMobileLayout() {
         const isMobile = window.innerWidth <= 900;
         const player = this.playerBar;
+        document.body.classList.toggle('player-active', this.isPlayerActive);
         if (isMobile) {
             document.body.classList.add('mobile');
             if (player) {
@@ -304,6 +305,7 @@ export class UI {
 
         if (this.playerBar) {
             this.isPlayerActive = true;
+            document.body.classList.add('player-active');
             this.playerBar.classList.remove('hidden');
         }
 
@@ -346,9 +348,9 @@ export class UI {
                 b = Math.min(255, b + 40);
             }
 
-            document.documentElement.style.setProperty('--ambient-1', `rgba(${r}, ${g}, ${b}, 0.12)`);
-            document.documentElement.style.setProperty('--ambient-2', `rgba(${g}, ${b}, ${r}, 0.06)`);
-            document.documentElement.style.setProperty('--ambient-3', `rgba(${Math.floor(r/4)}, ${Math.floor(g/4)}, ${Math.floor(b/4)}, 1)`);
+            document.documentElement.style.setProperty('--ambient-1', `rgba(${r}, ${g}, ${b}, 0.36)`);
+            document.documentElement.style.setProperty('--ambient-2', `rgba(${g}, ${b}, ${r}, 0.22)`);
+            document.documentElement.style.setProperty('--ambient-3', `rgba(${Math.floor(r / 2.5)}, ${Math.floor(g / 2.5)}, ${Math.floor(b / 2.5)}, 1)`);
             
             if (window.app && window.app.visualizer) {
                 window.app.visualizer.updateColors(r, g, b);
@@ -371,6 +373,8 @@ export class UI {
     }
 
     setPlayingState(isPlaying) {
+        document.body.classList.toggle('is-playing', isPlaying);
+
         if (isPlaying) {
             this.playPauseIcon.classList.remove('fa-play');
             this.playPauseIcon.classList.add('fa-pause');
@@ -390,6 +394,7 @@ export class UI {
         }
 
         if (this.playerBar) {
+            document.body.classList.toggle('player-active', this.isPlayerActive);
             if (document.body.classList.contains('mobile')) {
                 if (this.isPlayerActive) {
                     this.playerBar.classList.remove('hidden');
