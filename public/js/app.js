@@ -1,4 +1,4 @@
-import { YouTubeAPI } from './api.js?v=4';
+import { YouTubeAPI } from './api.js?v=6';
 import { Player } from './player.js?v=4';
 import { StorageUtils } from './storage.js?v=4';
 import { UI } from './ui.js?v=4';
@@ -1829,14 +1829,11 @@ class App {
 
         if (!song.id) {
             this.ui.setPlayingState(false);
-            let tRow = document.body;
+            const tRow = document.body;
             tRow.style.cursor = 'wait';
             try {
-                const results = await this.api.search(`${song.title} ${song.channelTitle}`, 5);
-                if (results && results.length > 0) {
-                    song.id = results[0].id;
-                    song.fallbackIds = results.slice(1).map(r => r.id);
-                } else {
+                const resolved = await this.resolvePlayableSong(song);
+                if (!resolved) {
                     console.warn(`Could not resolve YT ID for ${song.title}`);
                     tRow.style.cursor = 'default';
                     this.onPlayerError(100);
@@ -1872,6 +1869,71 @@ class App {
         // Fetch lyrics
         if (this.lyrics) {
             this.lyrics.fetchLyrics(song.title, song.channelTitle);
+        }
+    }
+
+    buildResolutionQueries(song) {
+        const clean = (value = '') => value
+            .replace(/\s+/g, ' ')
+            .replace(/\b(feat\.?|ft\.?)\b/gi, '')
+            .replace(/[()[\]{}]/g, ' ')
+            .trim();
+
+        const title = clean(song.title);
+        const artist = clean(song.channelTitle);
+        const queries = [
+            `${title} ${artist}`,
+            `${title} ${artist} audio`,
+            `${title} song`,
+            title
+        ].filter(Boolean);
+
+        return [...new Set(queries)];
+    }
+
+    async resolvePlayableSong(song) {
+        const candidates = [];
+        const seenIds = new Set();
+
+        for (const query of this.buildResolutionQueries(song)) {
+            const results = await this.api.search(query, 8);
+            for (const result of results || []) {
+                if (!result.id || seenIds.has(result.id)) continue;
+                seenIds.add(result.id);
+                candidates.push(result);
+            }
+            if (candidates.length >= 3) break;
+        }
+
+        if (!candidates.length) return false;
+
+        const [best, ...fallbacks] = candidates;
+        song.id = best.id;
+        song.fallbackIds = fallbacks.map(result => result.id);
+        if (!song.thumbnail && best.thumbnail) song.thumbnail = best.thumbnail;
+        this.persistResolvedSong(song);
+        return true;
+    }
+
+    persistResolvedSong(song) {
+        const playlists = StorageUtils.getSavedPlaylists();
+        let changed = false;
+
+        playlists.forEach(playlist => {
+            (playlist.tracks || []).forEach(track => {
+                const sameTrack = track === song ||
+                    (track.title === song.title && track.channelTitle === song.channelTitle);
+                if (!sameTrack) return;
+
+                track.id = song.id;
+                track.fallbackIds = song.fallbackIds || [];
+                if (song.thumbnail) track.thumbnail = song.thumbnail;
+                changed = true;
+            });
+        });
+
+        if (changed) {
+            StorageUtils.savePlaylists(playlists);
         }
     }
 
@@ -1963,6 +2025,7 @@ class App {
             const nextBestId = this.currentSong.fallbackIds.shift();
             console.log(`Trying alternative fallback video: ${nextBestId}`);
             this.currentSong.id = nextBestId;
+            this.persistResolvedSong(this.currentSong);
             this.player.loadSong(nextBestId);
             return;
         }

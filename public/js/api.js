@@ -16,8 +16,8 @@ export class YouTubeAPI {
 
     async search(query, limit = 20) {
         try {
-            // For Netlify/static deployment the search endpoint is /api/search
-            const endpoint = (this.proxyUrl === '') ? '/search' : `${this.proxyUrl}/search`;
+            // Netlify rewrites /api/search to /.netlify/functions/search.
+            const endpoint = (this.proxyUrl === '') ? '/api/search' : `${this.proxyUrl}/search`;
             const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}&limit=${limit}`);
             
             // If the backend returns an error (e.g., 404 from YTMusic), treat it as "no results"
@@ -66,7 +66,8 @@ export class YouTubeAPI {
                     id: item.id || null, // null if lazy loaded
                     title: this.decodeHtml(item.title),
                     channelTitle: this.decodeHtml(item.channelTitle),
-                    thumbnail: item.thumbnail
+                    thumbnail: item.thumbnail,
+                    isSpotify: !!item.isSpotify
                 }))
             };
         } catch (error) {
