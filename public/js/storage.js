@@ -138,5 +138,57 @@ export const StorageUtils = {
         } catch (e) {
             console.error('Failed to delete user data', e);
         }
+    },
+
+    // --- IndexedDB for Custom Wallpaper ---
+    _getDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('AlluPlayerDB', 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('wallpapers')) {
+                    db.createObjectStore('wallpapers');
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    saveWallpaper: async (blob, type) => {
+        const db = await StorageUtils._getDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('wallpapers', 'readwrite');
+            const store = tx.objectStore('wallpapers');
+            const key = StorageUtils._getKey('wallpaper');
+            const data = { blob, type };
+            const request = store.put(data, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    getWallpaper: async () => {
+        const db = await StorageUtils._getDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('wallpapers', 'readonly');
+            const store = tx.objectStore('wallpapers');
+            const key = StorageUtils._getKey('wallpaper');
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    },
+
+    removeWallpaper: async () => {
+        const db = await StorageUtils._getDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('wallpapers', 'readwrite');
+            const store = tx.objectStore('wallpapers');
+            const key = StorageUtils._getKey('wallpaper');
+            const request = store.delete(key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
     }
 };

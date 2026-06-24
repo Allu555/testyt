@@ -11,6 +11,7 @@ import requests as http_requests
 from dotenv import load_dotenv
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from functools import lru_cache
 
 # Load environment variables
 load_dotenv()
@@ -55,6 +56,7 @@ YTM_CONTEXT = {
     }
 }
 
+@lru_cache(maxsize=128)
 def ytm_search(query, limit=20):
     """Search YouTube Music directly via their internal API."""
     payload = {
@@ -147,7 +149,7 @@ except Exception as e:
     yt = None
 
 @app.get("/search")
-async def search(q: str = Query(...), limit: int = 20):
+def search(q: str = Query(...), limit: int = 20):
     try:
         logger.info(f"Searching for: {q}")
         results = ytm_search(q, limit=limit)
@@ -396,6 +398,7 @@ async def import_spotify(payload: dict):
 app.mount("/css", StaticFiles(directory="public/css"), name="css")
 app.mount("/js", StaticFiles(directory="public/js"), name="js")
 app.mount("/video", StaticFiles(directory="public/video"), name="video")
+app.mount("/images", StaticFiles(directory="public/images"), name="images")
 
 # Serve the index.html from the public/ folder
 @app.get("/")

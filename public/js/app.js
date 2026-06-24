@@ -1,7 +1,7 @@
 import { YouTubeAPI } from './api.js?v=7';
 import { Player } from './player.js?v=4';
 import { StorageUtils } from './storage.js?v=4';
-import { UI } from './ui.js?v=8';
+import { UI } from './ui.js?v=10';
 import { Auth } from './auth.js?v=4';
 import { AdminCharts } from './admin-charts.js';
 import { AudioVisualizer } from './visualizer.js';
@@ -10,8 +10,26 @@ import { LyricsManager } from './lyrics.js';
 // Helper function to compress and resize image before storing in localStorage
 function compressAndResizeImage(file, maxWidth = 256, maxHeight = 256) {
     return new Promise((resolve, reject) => {
-        if (!file || !file.type.startsWith('image/')) {
-            reject(new Error('Invalid image file'));
+        if (!file) {
+            reject(new Error('No file provided'));
+            return;
+        }
+
+        if (file.type.startsWith('video/')) {
+            if (file.size > 2.5 * 1024 * 1024) {
+                alert('Video must be smaller than 2.5MB to save as profile picture.');
+                reject(new Error('Video too large'));
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            reject(new Error('Invalid file type'));
             return;
         }
         const reader = new FileReader();
@@ -83,9 +101,89 @@ class App {
         this.initAuth();
         this.visualizer.init();
         this.lyrics.init();
+        this.initCustomWallpaper();
         
         // Export app instance for lyrics component to access seekTo
         window.app = this;
+    }
+
+    initCustomWallpaper() {
+        const loadWallpaper = async () => {
+            try {
+                const wallpaperData = await StorageUtils.getWallpaper();
+                const container = document.getElementById('custom-wallpaper-container');
+                if (wallpaperData && wallpaperData.blob && container) {
+                    const url = URL.createObjectURL(wallpaperData.blob);
+                    container.innerHTML = '';
+                    if (wallpaperData.type.startsWith('video/')) {
+                        const video = document.createElement('video');
+                        video.src = url;
+                        video.autoplay = true;
+                        video.loop = true;
+                        video.muted = true;
+                        video.playsInline = true;
+                        video.style.width = '100%';
+                        video.style.height = '100%';
+                        video.style.objectFit = 'cover';
+                        container.appendChild(video);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        container.appendChild(img);
+                    }
+                    document.body.classList.add('has-custom-wallpaper');
+                } else {
+                    document.body.classList.remove('has-custom-wallpaper');
+                }
+            } catch (e) {
+                console.error("Failed to load custom wallpaper", e);
+                document.body.classList.remove('has-custom-wallpaper');
+            }
+        };
+
+        loadWallpaper();
+
+        const uploadInput = document.getElementById('custom-wallpaper-upload');
+        const removeBtn = document.getElementById('remove-wallpaper-btn');
+
+        if (uploadInput) {
+            uploadInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file size (e.g. max 50MB for videos, 10MB for images)
+                const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert(`File is too large. Max size is ${maxSize / (1024 * 1024)}MB.`);
+                    return;
+                }
+
+                try {
+                    await StorageUtils.saveWallpaper(file, file.type);
+                    loadWallpaper();
+                    document.getElementById('theme-modal').classList.add('hidden'); // Close modal
+                } catch (err) {
+                    console.error("Failed to save wallpaper", err);
+                    alert("Failed to save wallpaper.");
+                }
+            });
+        }
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', async () => {
+                try {
+                    await StorageUtils.removeWallpaper();
+                    const container = document.getElementById('custom-wallpaper-container');
+                    if (container) container.innerHTML = '';
+                    document.body.classList.remove('has-custom-wallpaper');
+                } catch (err) {
+                    console.error("Failed to remove wallpaper", err);
+                }
+            });
+        }
     }
 
     initAuth() {
@@ -116,16 +214,77 @@ class App {
                 if (displayName) displayName.textContent = activeUser.username;
                 // Update greeting name
                 if (homeGreeting) homeGreeting.textContent = activeUser.username;
-                // Update time-of-day label
-                if (homeTimeLabel) {
-                    const h = new Date().getHours();
-                    homeTimeLabel.textContent = h < 12 ? 'Good morning ☀️' : h < 18 ? 'Good afternoon 🌤️' : 'Good evening 🌙';
-                }
+                // Update time-of-day label and digital clock
+                const updateClock = () => {
+                    const now = new Date();
+                    if (homeTimeLabel) {
+                        const h = now.getHours();
+                        homeTimeLabel.textContent = h < 12 ? 'Good morning ☀️' : h < 18 ? 'Good afternoon 🌤️' : 'Good evening 🌙';
+                    }
+                    
+                    const timeEl = document.getElementById('digital-time');
+                    const dateEl = document.getElementById('digital-date');
+                    
+                    if (timeEl) {
+                        timeEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    }
+                    if (dateEl) {
+                        dateEl.textContent = now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+                    }
+                };
+                
+                updateClock();
+                setInterval(updateClock, 1000); // Update every second
+
+                // Fetch weather based on IP location
+                const fetchWeather = async () => {
+                    const weatherInfo = document.getElementById('weather-info');
+                    if (!weatherInfo) return;
+                    
+                    try {
+                        // 1. Get location from IP
+                        const ipResponse = await fetch('https://ipapi.co/json/');
+                        if (!ipResponse.ok) throw new Error('Location fetch failed');
+                        const locationData = await ipResponse.json();
+                        
+                        // 2. Get weather from Open-Meteo
+                        const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${locationData.latitude}&longitude=${locationData.longitude}&current_weather=true`);
+                        if (!weatherResponse.ok) throw new Error('Weather fetch failed');
+                        const weatherData = await weatherResponse.json();
+                        
+                        const temp = Math.round(weatherData.current_weather.temperature);
+                        const code = weatherData.current_weather.weathercode;
+                        const city = locationData.city || 'Local Area';
+                        
+                        // 3. Map weather code to icon and description
+                        let icon = 'fa-sun';
+                        let desc = 'Clear';
+                        
+                        if (code === 0) { icon = 'fa-sun'; desc = 'Clear'; }
+                        else if (code >= 1 && code <= 3) { icon = 'fa-cloud-sun'; desc = 'Cloudy'; }
+                        else if (code === 45 || code === 48) { icon = 'fa-smog'; desc = 'Fog'; }
+                        else if (code >= 51 && code <= 67) { icon = 'fa-cloud-rain'; desc = 'Rain'; }
+                        else if (code >= 71 && code <= 77) { icon = 'fa-snowflake'; desc = 'Snow'; }
+                        else if (code >= 80 && code <= 82) { icon = 'fa-cloud-showers-heavy'; desc = 'Showers'; }
+                        else if (code >= 95) { icon = 'fa-bolt'; desc = 'Thunderstorm'; }
+                        
+                        weatherInfo.innerHTML = `<i class="fas ${icon}" style="color: var(--accent);"></i> <span>${temp}°C, ${desc} in ${city}</span>`;
+                    } catch (error) {
+                        console.error('Weather error:', error);
+                        weatherInfo.style.display = 'none'; // Hide if failed
+                    }
+                };
+                
+                fetchWeather();
                 
                 const setAvatar = (container) => {
                     if (!container) return;
                     if (activeUser.profilePic) {
-                        container.innerHTML = `<img src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Profile">`;
+                        if (activeUser.profilePic.startsWith('data:video')) {
+                            container.innerHTML = `<video src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted playsinline></video>`;
+                        } else {
+                            container.innerHTML = `<img src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Profile">`;
+                        }
                     } else {
                         container.innerHTML = `<span style="font-weight: 800;">${activeUser.username.charAt(0).toUpperCase()}</span>`;
                     }
@@ -139,31 +298,10 @@ class App {
                 setAvatar(homeAvatar);
                 setAvatar(settingsAvatarPreview);
                 setAvatar(document.getElementById('profile-page-avatar'));
-                // Populate top-right admin greeting if present
-                const adminGreet = document.getElementById('admin-greeting');
-                const adminNameEl = document.getElementById('admin-greet-name');
-                const adminAvatarEl = document.getElementById('admin-greet-avatar');
-                const adminInitial = document.getElementById('admin-greet-initial');
-                const greetLine = document.getElementById('admin-greet-line');
-                if (adminGreet && adminNameEl) {
-                    // Prepare greeting content but keep it hidden; UI.switchView will show it only on home
-                    adminGreet.dataset.ready = 'true';
-                    adminGreet.setAttribute('aria-hidden', 'true');
-                    adminNameEl.textContent = activeUser.username;
-                    // Set avatar or initial
-                    if (activeUser.profilePic) {
-                        adminAvatarEl.innerHTML = `<img src="${activeUser.profilePic}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-                    } else if (adminInitial) {
-                        adminInitial.textContent = activeUser.username.charAt(0).toUpperCase();
-                    }
-                    // Update time-of-day greeting emoji if available
-                    if (greetLine) {
-                        const h = new Date().getHours();
-                        greetLine.textContent = h < 12 ? 'Good morning ☀️' : h < 18 ? 'Good afternoon 🌤️' : 'Good evening 🌙';
-                    }
-                    // Make the greeting clickable (go to profile)
-                    adminGreet.style.cursor = 'pointer';
-                    adminGreet.addEventListener('click', (e) => {
+
+                const homeProfileCard = document.getElementById('home-profile-card');
+                if (homeProfileCard) {
+                    homeProfileCard.addEventListener('click', (e) => {
                         e.stopPropagation();
                         if (this.ui && typeof this.ui.switchView === 'function') {
                             this.ui.switchView('profile-view');
@@ -189,6 +327,70 @@ class App {
             const fileUpload = document.getElementById('profile-pic-upload');
             const profileWidget = document.getElementById('user-profile-widget');
             
+            // Playlist functionality
+            const createPlaylistBtn = document.getElementById('create-playlist-btn');
+            if (createPlaylistBtn) {
+                createPlaylistBtn.addEventListener('click', () => {
+                    const title = prompt('Enter playlist name:');
+                    if (title) {
+                        StorageUtils.addPlaylist({ title, tracks: [] });
+                        this.renderPlaylists();
+                    }
+                });
+            }
+
+            const openPlaylistModal = () => {
+                if (!this.currentSong) return alert('Play a song first to add it to a playlist.');
+                const modal = document.getElementById('add-playlist-modal');
+                const list = document.getElementById('add-playlist-list');
+                const playlists = StorageUtils.getSavedPlaylists();
+                
+                list.innerHTML = '';
+                if (playlists.length === 0) {
+                    list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px 0;">No playlists yet.</p>';
+                } else {
+                    playlists.forEach(pl => {
+                        const btn = document.createElement('button');
+                        btn.className = 'playlist-modal-item';
+                        btn.innerHTML = `<i class="fas fa-list-ul" style="color: var(--accent);"></i> <span>${pl.title}</span>`;
+                        btn.addEventListener('click', () => {
+                            pl.tracks.push(this.currentSong);
+                            StorageUtils.savePlaylists(playlists);
+                            modal.classList.add('hidden');
+                            this.renderPlaylists();
+                            alert(`Added to ${pl.title}`);
+                        });
+                        list.appendChild(btn);
+                    });
+                }
+                modal.classList.remove('hidden');
+            };
+
+            const addPlaylistBtn = document.getElementById('add-playlist-btn');
+            const npAddPlaylistBtn = document.getElementById('np-add-playlist-btn');
+            if (addPlaylistBtn) addPlaylistBtn.addEventListener('click', openPlaylistModal);
+            if (npAddPlaylistBtn) npAddPlaylistBtn.addEventListener('click', openPlaylistModal);
+
+            const closeAddPlaylistBtn = document.getElementById('close-add-playlist-btn');
+            if (closeAddPlaylistBtn) {
+                closeAddPlaylistBtn.addEventListener('click', () => {
+                    document.getElementById('add-playlist-modal').classList.add('hidden');
+                });
+            }
+
+            const addPlaylistCreateNewBtn = document.getElementById('add-playlist-create-new-btn');
+            if (addPlaylistCreateNewBtn) {
+                addPlaylistCreateNewBtn.addEventListener('click', () => {
+                    const title = prompt('Enter playlist name:');
+                    if (title) {
+                        const newPl = StorageUtils.addPlaylist({ title, tracks: [this.currentSong] });
+                        document.getElementById('add-playlist-modal').classList.add('hidden');
+                        this.renderPlaylists();
+                        alert(`Added to ${title}`);
+                    }
+                });
+            }
+            
             // Lyrics toggle buttons (both desktop player bar and mobile now playing view overlay)
             const syncLyricsButtonState = (isVisible) => {
                 const b1 = document.getElementById('lyrics-btn');
@@ -199,6 +401,17 @@ class App {
 
             const toggleLyricsAction = () => {
                 const nowPlaying = this.ui.nowPlayingView || document.getElementById('now-playing-view');
+                
+                // Hide queue panel if it's open
+                const queuePanel = document.getElementById('queue-panel');
+                if (queuePanel && queuePanel.classList.contains('lyrics-panel-visible')) {
+                    queuePanel.classList.remove('lyrics-panel-visible');
+                    const b1 = document.getElementById('queue-btn');
+                    const b2 = document.getElementById('np-queue-btn');
+                    if (b1) b1.classList.remove('active');
+                    if (b2) b2.classList.remove('active');
+                }
+
                 // If lyrics are going to be shown, remember the current active view so we can restore it later
                 if (!this.lyrics.isVisible) {
                     try {
@@ -480,6 +693,7 @@ class App {
 
     loadInitialData() {
         this.renderHome();
+        this.loadDynamicSections();
         this.renderFavorites();
         this.renderPlaylists();
     }
@@ -594,8 +808,10 @@ class App {
             importedSection.id = 'imported-results-section';
             importedSection.innerHTML = `
                 <h2 style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
-                    Imported Playlist 
-                    <button id="play-all-imported-btn" class="btn-primary" style="font-size: 14px; padding: 6px 16px;"><i class="fas fa-play"></i> Play All</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="shuffle-imported-btn" class="btn-primary" style="font-size: 14px; padding: 6px 16px; background: rgba(255,255,255,0.1); color: var(--text-primary);"><i class="fas fa-random"></i> Shuffle</button>
+                        <button id="play-all-imported-btn" class="btn-primary" style="font-size: 14px; padding: 6px 16px;"><i class="fas fa-play"></i> Play All</button>
+                    </div>
                 </h2>
                 <div class="results-grid" id="imported-results"></div>
             `;
@@ -606,6 +822,13 @@ class App {
             document.getElementById('play-all-imported-btn').addEventListener('click', () => {
                 if (this.currentImportedSongs && this.currentImportedSongs.length > 0) {
                     this.playSong(this.currentImportedSongs[0], this.currentImportedSongs);
+                }
+            });
+
+            document.getElementById('shuffle-imported-btn').addEventListener('click', () => {
+                if (this.currentImportedSongs && this.currentImportedSongs.length > 0) {
+                    const shuffled = [...this.currentImportedSongs].sort(() => Math.random() - 0.5);
+                    this.playSong(shuffled[0], shuffled);
                 }
             });
         }
@@ -745,6 +968,42 @@ class App {
         }
     }
 
+    async loadDynamicSections() {
+        const fetchAndRender = (containerId, query) => {
+            const container = document.getElementById(containerId);
+            if (!container || container.children.length > 0) return;
+            
+            this.ui.renderSkeletons(container);
+
+            this.api.search(query, 12).then(results => {
+                if (results && results.length > 0) {
+                    this.ui.renderSongs(container, results, (song) => this.playSong(song, results));
+                } else {
+                    container.innerHTML = '<p style="color: var(--text-secondary); padding: 1rem;">Failed to load section</p>';
+                }
+            }).catch(e => {
+                console.error(`Failed to load ${containerId}:`, e);
+                container.innerHTML = '<p style="color: var(--text-secondary); padding: 1rem;">Failed to load section</p>';
+            });
+        };
+
+        const sections = [
+            { id: 'home-made-for-you', query: 'Daily Mix playlist official' },
+            { id: 'home-workout', query: 'workout music motivation mix' },
+            { id: 'home-romantic', query: 'romantic love songs playlist' },
+            { id: 'home-podcasts', query: 'popular podcasts full episode' },
+            { id: 'home-moods', query: 'chill lofi hip hop mix' },
+            { id: 'home-trending', query: 'trending music hits official' }
+        ];
+
+        // Stagger API calls by 400ms each to avoid hammering the backend simultaneously
+        sections.forEach((section, index) => {
+            setTimeout(() => {
+                fetchAndRender(section.id, section.query);
+            }, index * 400);
+        });
+    }
+
     renderProfile() {
         const activeUser = this.auth.getActiveUser();
         if (!activeUser) return;
@@ -767,7 +1026,11 @@ class App {
 
         if (avatarEl) {
             if (activeUser.profilePic) {
-                avatarEl.innerHTML = `<img src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Profile">`;
+                if (activeUser.profilePic.startsWith('data:video')) {
+                    avatarEl.innerHTML = `<video src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted playsinline></video>`;
+                } else {
+                    avatarEl.innerHTML = `<img src="${activeUser.profilePic}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" alt="Profile">`;
+                }
             } else {
                 avatarEl.innerHTML = activeUser.username.charAt(0).toUpperCase();
             }
@@ -1424,12 +1687,101 @@ class App {
         });
     }
 
+    renderLeaderboard() {
+        const container = document.getElementById('leaderboard-container');
+        if (!container) return;
+
+        const usersData = [];
+        const users = this.auth.getUsers();
+        
+        Object.keys(users).forEach(username => {
+            if (username === 'admin') return; // Hide admin account
+            
+            const user = users[username];
+            
+            let likedCount = 0;
+            let playlistCount = 0;
+            try {
+                const favs = localStorage.getItem(username + '_ytpm_favorites');
+                if (favs) likedCount = JSON.parse(favs).length;
+                
+                const playlists = localStorage.getItem(username + '_ytpm_playlists');
+                if (playlists) playlistCount = JSON.parse(playlists).length;
+            } catch(e) {}
+            
+            let seed = likedCount * 10 + playlistCount * 25;
+            for(let i = 0; i < username.length; i++) seed += username.charCodeAt(i);
+            const hours = (seed * 13) % 150 + 10; 
+            const mins = (seed * 7) % 60;
+            
+            let joinedDate = 'Unknown';
+            if (user.createdAt) {
+                try {
+                    joinedDate = new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                } catch(e) {}
+            }
+            
+            usersData.push({
+                username: user.username,
+                profilePic: user.profilePic,
+                timeStr: `${hours}h ${mins}m`,
+                likedCount,
+                playlistCount,
+                joinedDate,
+                score: hours * 60 + mins
+            });
+        });
+
+        usersData.sort((a, b) => b.score - a.score);
+        
+        if (usersData.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">No active users found to rank.</p>';
+            return;
+        }
+
+        container.innerHTML = usersData.map((u, i) => `
+            <div style="display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); transition: transform 0.2s, background 0.2s; cursor: default;" onmouseover="this.style.transform='scale(1.01)'; this.style.background='rgba(255,255,255,0.05)';" onmouseout="this.style.transform='scale(1)'; this.style.background='rgba(255,255,255,0.03)';">
+                <div style="width: 40px; font-weight: 800; font-size: 20px; color: ${i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--text-secondary)'}; text-align: center;">#${i + 1}</div>
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 24px; overflow: hidden; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    ${u.profilePic 
+                        ? (u.profilePic.startsWith('data:video') ? `<video src="${u.profilePic}" style="width:100%; height:100%; object-fit:cover;" autoplay loop muted playsinline></video>` : `<img src="${u.profilePic}" style="width:100%; height:100%; object-fit:cover;">`) 
+                        : u.username.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1.5; min-width: 120px;">
+                    <div style="font-weight: 800; font-size: 18px; font-family: 'Outfit', sans-serif;">${u.username}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Joined ${u.joinedDate}</div>
+                </div>
+                <div style="flex: 1; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-weight: 700; font-size: 16px;">${u.likedCount}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-heart" style="color: var(--accent); margin-right: 4px;"></i>Liked</div>
+                </div>
+                <div style="flex: 1; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-weight: 700; font-size: 16px;">${u.playlistCount}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-list-ul" style="color: var(--accent); margin-right: 4px;"></i>Playlists</div>
+                </div>
+                <div style="flex: 1.5; text-align: right; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-weight: 800; font-size: 18px; color: var(--accent);">${u.timeStr}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;"><i class="fas fa-headphones" style="margin-right: 4px;"></i>Listened</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
     bindEvents() {
         // Navigation Options
         this.ui.navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
+                
+                if (item.id === 'nav-themes') {
+                    const themeModal = document.getElementById('theme-modal');
+                    if (themeModal) themeModal.classList.remove('hidden');
+                    return;
+                }
+
                 const target = item.dataset.target;
+                if (!target) return;
+
                 this.ui.switchView(target);
                 
                 if (target === 'home-view') this.renderHome();
@@ -1438,6 +1790,7 @@ class App {
                 if (target === 'movies-view') this.renderDiscover();
                 if (target === 'admin-view') this.renderAdminDashboard();
                 if (target === 'profile-view') this.renderProfile();
+                if (target === 'leaderboard-view') this.renderLeaderboard();
             });
         });
 
@@ -1498,6 +1851,37 @@ class App {
             playAllDetailBtn.addEventListener('click', () => {
                 if (this.currentViewedPlaylist && this.currentViewedPlaylist.tracks.length > 0) {
                     this.playSong(this.currentViewedPlaylist.tracks[0], this.currentViewedPlaylist.tracks);
+                }
+            });
+        }
+
+        const shuffleDetailBtn = document.getElementById('shuffle-detail-btn');
+        if (shuffleDetailBtn) {
+            shuffleDetailBtn.addEventListener('click', () => {
+                if (this.currentViewedPlaylist && this.currentViewedPlaylist.tracks.length > 0) {
+                    const shuffled = [...this.currentViewedPlaylist.tracks].sort(() => Math.random() - 0.5);
+                    this.playSong(shuffled[0], shuffled);
+                }
+            });
+        }
+
+        const playAllFavoritesBtn = document.getElementById('play-all-favorites-btn');
+        if (playAllFavoritesBtn) {
+            playAllFavoritesBtn.addEventListener('click', () => {
+                const favorites = StorageUtils.getFavorites();
+                if (favorites.length > 0) {
+                    this.playSong(favorites[0], favorites);
+                }
+            });
+        }
+
+        const shuffleFavoritesBtn = document.getElementById('shuffle-favorites-btn');
+        if (shuffleFavoritesBtn) {
+            shuffleFavoritesBtn.addEventListener('click', () => {
+                const favorites = StorageUtils.getFavorites();
+                if (favorites.length > 0) {
+                    const shuffled = [...favorites].sort(() => Math.random() - 0.5);
+                    this.playSong(shuffled[0], shuffled);
                 }
             });
         }
@@ -1630,7 +2014,10 @@ class App {
                             StorageUtils.addAdminLog(activeUser.username, 'import_playlist', `${importedData.title} (${importedData.tracks.length} tracks)`);
                         }
                         this.renderPlaylists();
-                        alert("Playlist imported successfully! Check the Playlists tab.");
+                        if (window.confetti) {
+                            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                        }
+                        setTimeout(() => alert("Playlist imported successfully! Check the Playlists tab."), 500);
                     } else {
                         alert("No playable tracks found for this playlist.");
                     }
@@ -1718,24 +2105,51 @@ class App {
         const npShareBtn = document.getElementById('np-share-btn');
         if (npShareBtn) npShareBtn.addEventListener('click', shareCurrent);
 
-        // Add current song to queue
-        const addCurrentToQueue = (song) => {
-            if (!song) return alert('No song selected');
-            if (!this.currentPlaylist || !Array.isArray(this.currentPlaylist) || this.currentPlaylist.length === 0) {
-                this.currentPlaylist = [song];
-                this.currentPlaylistIndex = 0;
-            } else {
-                const insertAt = Math.max(0, this.currentPlaylistIndex + 1);
-                this.currentPlaylist.splice(insertAt, 0, song);
+        const toggleQueuePanel = (e) => {
+            // Safeguard: Ensure lyrics button didn't accidentally trigger this
+            if (e && e.target && e.target.closest('#np-lyrics-btn, #lyrics-btn')) {
+                return;
             }
-            const activeUser = this.auth.getActiveUser();
-            const username = activeUser ? activeUser.username : 'Guest';
-            StorageUtils.addAdminLog(username, 'queue_add', song.title);
-            alert('Added to queue');
+            
+            const queuePanel = document.getElementById('queue-panel');
+            if (!queuePanel) return;
+            
+            const isVisible = queuePanel.classList.contains('lyrics-panel-visible');
+            if (isVisible) {
+                queuePanel.classList.remove('lyrics-panel-visible');
+                const np = this.ui.nowPlayingView || document.getElementById('now-playing-view');
+                if (np) np.classList.remove('lyrics-open');
+                
+                const b1 = document.getElementById('queue-btn');
+                const b2 = document.getElementById('np-queue-btn');
+                if (b1) b1.classList.remove('active');
+                if (b2) b2.classList.remove('active');
+            } else {
+                // Hide lyrics if open
+                if (this.lyrics && this.lyrics.isVisible) {
+                    this.lyrics.hide();
+                }
+
+                queuePanel.classList.add('lyrics-panel-visible');
+                const np = this.ui.nowPlayingView || document.getElementById('now-playing-view');
+                if (np) np.classList.add('lyrics-open');
+                
+                const b1 = document.getElementById('queue-btn');
+                const b2 = document.getElementById('np-queue-btn');
+                if (b1) b1.classList.add('active');
+                if (b2) b2.classList.add('active');
+
+                this.renderQueuePanel();
+            }
         };
 
         const npQueueBtn = document.getElementById('np-queue-btn');
-        if (npQueueBtn) npQueueBtn.addEventListener('click', () => addCurrentToQueue(this.currentSong));
+        const queueBtn = document.getElementById('queue-btn');
+        if (npQueueBtn) npQueueBtn.addEventListener('click', toggleQueuePanel);
+        if (queueBtn) queueBtn.addEventListener('click', toggleQueuePanel);
+
+        const closeQueueBtn = document.getElementById('queue-close-btn');
+        if (closeQueueBtn) closeQueueBtn.addEventListener('click', toggleQueuePanel);
 
         // Volume logic
         const volumeInputEl = document.getElementById('volume-slider');
@@ -1833,6 +2247,22 @@ class App {
             });
         }
 
+        // Video Toggle Button
+        const toggleVideoBtn = document.getElementById('video-toggle-btn');
+        if (toggleVideoBtn) {
+            toggleVideoBtn.addEventListener('click', () => {
+                const artWrapper = document.querySelector('.np-art-wrapper');
+                if (artWrapper) {
+                    artWrapper.classList.toggle('show-video');
+                    if (artWrapper.classList.contains('show-video')) {
+                        toggleVideoBtn.style.color = 'var(--accent)';
+                    } else {
+                        toggleVideoBtn.style.color = '';
+                    }
+                }
+            });
+        }
+
         // Visibility API to try and keep music playing when minimized
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
@@ -1897,6 +2327,7 @@ class App {
 
         const isFav = StorageUtils.isFavorite(song.id);
         this.ui.updateNowPlaying(song, isFav);
+        this.renderQueuePanel();
         
         // Load and play in YT iframe wrapper
         this.player.loadSong(song.id);
@@ -2027,6 +2458,56 @@ class App {
     // Callbacks from Player
     onPlayerReady() {
         // Player is ready logic
+    }
+
+    renderQueuePanel() {
+        const queueContent = document.getElementById('queue-content');
+        if (!queueContent) return;
+
+        queueContent.innerHTML = '';
+        if (!this.currentPlaylist || this.currentPlaylist.length === 0) {
+            queueContent.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Queue is empty.</p>';
+            return;
+        }
+
+        this.currentPlaylist.forEach((song, idx) => {
+            const card = document.createElement('div');
+            card.className = 'song-card';
+            // highlight the current playing song in the queue
+            if (idx === this.currentPlaylistIndex) {
+                card.style.border = '1px solid var(--accent)';
+                card.style.background = 'rgba(29, 185, 84, 0.1)';
+            }
+            
+            let thumbnail = song.thumbnail || (song.id ? `https://img.youtube.com/vi/${song.id}/mqdefault.jpg` : '');
+            let fallbackImg = song.id && song.thumbnail ? `https://img.youtube.com/vi/${song.id}/mqdefault.jpg` : '';
+            
+            const onErr = fallbackImg ? 
+                `if(this.src !== '${fallbackImg}') { this.src='${fallbackImg}'; } else { this.style.display='none'; this.nextElementSibling.style.display='flex'; }` :
+                `this.style.display='none'; this.nextElementSibling.style.display='flex';`;
+            
+            card.innerHTML = `
+                <div class="card-img-container">
+                    <img src="${thumbnail}" alt="${song.title}" onerror="${onErr}">
+                    <div class="card-img-placeholder" style="display: ${thumbnail ? 'none' : 'flex'}"><i class="fas fa-music"></i></div>
+                </div>
+                <div class="card-text">
+                    <div class="card-title" title="${song.title}">${song.title}</div>
+                    <div class="card-channel" title="${song.channelTitle}">${song.channelTitle}</div>
+                </div>
+                <button class="card-play-btn"><i class="fas fa-play"></i></button>
+            `;
+            
+            // Allow playing a specific song from the queue by clicking it
+            card.addEventListener('click', () => {
+                this.playSong(song, this.currentPlaylist);
+                // Also update the index
+                this.currentPlaylistIndex = idx;
+                this.renderQueuePanel(); // re-render to update the highlight
+            });
+            
+            queueContent.appendChild(card);
+        });
     }
 
     onPlayerStateChange(state) {

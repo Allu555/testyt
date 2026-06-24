@@ -13,7 +13,8 @@ export class UI {
             playlistDetail: document.getElementById('playlist-detail-view'),
             movies: document.getElementById('movies-view'),
             admin: document.getElementById('admin-view'),
-            profile: document.getElementById('profile-view')
+            profile: document.getElementById('profile-view'),
+            leaderboard: document.getElementById('leaderboard-view')
         };
         this.navItems = document.querySelectorAll('.nav-item');
         
@@ -150,6 +151,24 @@ export class UI {
                 adminGreet.classList.add('hidden');
                 adminGreet.setAttribute('aria-hidden', 'true');
             }
+        }
+    }
+
+    renderSkeletons(container, count = 6) {
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const skel = document.createElement('div');
+            skel.className = 'song-card skeleton';
+            skel.style.pointerEvents = 'none';
+            skel.innerHTML = `
+                <div class="card-img-container" style="background: rgba(255,255,255,0.05); border-radius: 12px; width: 100%; aspect-ratio: 1; animation: pulse 1.5s infinite;"></div>
+                <div class="card-text" style="padding-top: 12px;">
+                    <div class="card-title" style="height: 14px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 8px; width: 80%; animation: pulse 1.5s infinite;"></div>
+                    <div class="card-artist" style="height: 12px; background: rgba(255,255,255,0.05); border-radius: 4px; width: 60%; animation: pulse 1.5s infinite;"></div>
+                </div>
+            `;
+            container.appendChild(skel);
         }
     }
 

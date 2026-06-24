@@ -196,6 +196,7 @@ export class LyricsManager {
                 // Seek to this line's timestamp if player supports it
                 if (window.app && window.app.player) {
                     window.app.player.seekTo(line.time);
+                    this.update(line.time); // Immediately update UI
                 }
             });
             wrapper.appendChild(el);

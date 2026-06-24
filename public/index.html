@@ -2,6 +2,78 @@
 <html lang="en">
 
 <head>
+    <!-- Security / Anti-Inspect Script -->
+    <script>
+        (function() {
+            const blockDevTools = () => {
+                document.body.innerHTML = `
+                    <style>
+                        @keyframes sirenPulse {
+                            0% { background: rgba(50, 0, 0, 0.9); }
+                            50% { background: rgba(200, 0, 0, 0.7); }
+                            100% { background: rgba(50, 0, 0, 0.9); }
+                        }
+                        @keyframes glitchText {
+                            0% { transform: translate(0); text-shadow: -2px 0 red, 2px 0 blue; }
+                            20% { transform: translate(-2px, 1px); text-shadow: 2px 0 red, -2px 0 blue; }
+                            40% { transform: translate(-1px, -1px); text-shadow: 1px 0 red, -1px 0 blue; }
+                            60% { transform: translate(2px, 2px); text-shadow: -1px 0 red, 1px 0 blue; }
+                            80% { transform: translate(1px, -2px); text-shadow: -2px 0 red, 2px 0 blue; }
+                            100% { transform: translate(0); text-shadow: 2px 0 red, -2px 0 blue; }
+                        }
+                        .security-bg {
+                            position:fixed;top:0;left:0;width:100vw;height:100vh;
+                            background-color:#0a0000;
+                            background-image:url('images/security-anime.png');
+                            background-size:cover;
+                            background-position:center;
+                            z-index:999999;overflow:hidden;display:flex;justify-content:center;align-items:center;
+                        }
+                        .security-overlay {
+                            position:absolute;top:0;left:0;width:100%;height:100%;
+                            z-index:1;
+                            animation: sirenPulse 2s infinite ease-in-out;
+                        }
+                    </style>
+                    <div class="security-bg">
+                        <div class="security-overlay"></div>
+                        <div style="position:relative;z-index:2;color:#ff3333;font-family:'Courier New', Courier, monospace;text-align:center;text-shadow:0 4px 12px rgba(0,0,0,0.8);background:rgba(0,0,0,0.85);padding:50px 60px;border-radius:24px;border:2px solid #ff3333;box-shadow:0 0 50px rgba(255,51,51,0.8);backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;max-width:600px;">
+                            <h1 style="margin:0 0 16px 0;font-size:48px;text-transform:uppercase;letter-spacing:4px;animation: glitchText 3s infinite;">Security Alert</h1>
+                            <p style="margin:0 0 12px 0;font-size:22px;color:#fff;letter-spacing:1px;">Developer tools / Inspection detected.</p>
+                            <p style="margin:0;font-size:32px;font-weight:bold;letter-spacing:2px;color:#ff3333;">ACCESS DENIED</p>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Prevent Right Click (Context Menu)
+            document.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+            document.addEventListener('keydown', e => {
+                if (e.keyCode === 123 || // F12
+                    (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
+                    (e.ctrlKey && e.keyCode === 85)) { // Ctrl+U
+                    e.preventDefault();
+                    blockDevTools();
+                }
+            });
+
+            // 1. Detect DevTools via debugger pause timing (catches undocked if breakpoints are enabled)
+            // We use a 1000ms interval so it doesn't drain battery on mobile devices.
+            setInterval(() => {
+                const start = performance.now();
+                (function() { return false; }['constructor']('debugger')());
+                const end = performance.now();
+                if (end - start > 100) {
+                    blockDevTools();
+                }
+            }, 1000);
+            
+            // Note: We avoid checking outerWidth vs innerWidth as it causes false positives 
+            // on mobile devices (due to pixel ratio differences) and when zooming in.
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Allu Player — A premium Spotify-inspired YouTube Music Player with beautiful UI and mobile support.">
@@ -18,9 +90,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <!-- Chart.js for Admin Analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Synchronous theme loader to prevent flash
+        (function() {
+            const accent = localStorage.getItem('theme_accent');
+            const bg = localStorage.getItem('theme_bg');
+            const radius = localStorage.getItem('theme_radius');
+
+            if (accent) document.documentElement.style.setProperty('--accent', accent);
+            
+            if (bg) {
+                let bgPrimary = '#121212', bgSurface = 'rgba(24, 24, 27, 0.6)';
+                if (bg === 'midnight') { bgPrimary = '#0f172a'; bgSurface = 'rgba(30, 41, 59, 0.7)'; }
+                else if (bg === 'amoled') { bgPrimary = '#000000'; bgSurface = 'rgba(10, 10, 10, 0.8)'; }
+                document.documentElement.style.setProperty('--bg-primary', bgPrimary);
+                document.documentElement.style.setProperty('--surface', bgSurface);
+            }
+
+            if (radius) {
+                document.documentElement.style.setProperty('--radius-sm', radius === '0px' ? '0px' : (radius === '24px' ? '12px' : '4px'));
+                document.documentElement.style.setProperty('--radius-md', radius === '0px' ? '0px' : (radius === '24px' ? '16px' : '8px'));
+                document.documentElement.style.setProperty('--radius-lg', radius);
+                document.documentElement.style.setProperty('--radius-full', radius === '0px' ? '0px' : '9999px');
+            }
+        })();
+    </script>
 </head>
 
 <body>
+    <!-- Custom User Wallpaper Container -->
+    <div id="custom-wallpaper-container"></div>
+    
     <div class="app-container">
         <!-- Cinematic Ambient Background -->
         <div class="ambient-bg"></div>
@@ -63,6 +163,14 @@
                     <i class="fas fa-heart"></i>
                     <span>Liked</span>
                 </a>
+                <a href="#" class="nav-item" data-target="leaderboard-view">
+                    <i class="fas fa-trophy"></i>
+                    <span>Leaderboard</span>
+                </a>
+                <a href="#" class="nav-item" id="nav-themes">
+                    <i class="fas fa-paint-brush"></i>
+                    <span>Themes</span>
+                </a>
                 <a href="#" class="nav-item desktop-only hidden" data-target="admin-view" id="nav-admin">
                     <i class="fas fa-user-shield"></i>
                     <span>Admin Panel</span>
@@ -75,7 +183,7 @@
                     </div>
                     <span style="font-weight: 600; font-size: 13px; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-family: 'Inter', sans-serif;" id="user-display-name">Guest</span>
                 </a>
-                <input type="file" id="profile-pic-upload" accept="image/*" style="display: none;">
+                <input type="file" id="profile-pic-upload" accept="image/*,video/*" style="display: none;">
 
                 <a href="#" class="nav-item desktop-only" id="nav-logout" style="margin-top: 0;">
                     <i class="fas fa-sign-out-alt"></i>
@@ -137,11 +245,23 @@
             <section id="home-view" class="view-section active">
                 <!-- Welcome Hero Banner -->
                 <div class="home-hero">
-                    <div class="home-hero-left">
-                        <div class="home-avatar-wrap" id="home-avatar">U</div>
-                        <div class="home-hero-text">
-                            <p class="home-time-label">Good evening</p>
-                            <h1 class="home-greeting-name" id="home-greeting">Welcome back, Guest</h1>
+                    <div class="home-hero-header" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                        <!-- Digital Clock & Weather (Left) -->
+                        <div class="home-digital-clock">
+                            <div id="digital-time" class="digital-time">12:00:00</div>
+                            <div id="digital-date" class="digital-date">Monday, Jan 1</div>
+                            <div id="weather-info" class="weather-info">
+                                <i class="fas fa-spinner fa-spin"></i> Loading weather...
+                            </div>
+                        </div>
+
+                        <!-- User Info (Right) -->
+                        <div class="home-hero-right" data-tilt data-tilt-max="5" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2" style="cursor: pointer; padding: 12px; border-radius: var(--radius-lg); display: flex; align-items: center; gap: 16px; text-align: right;" id="home-profile-card">
+                            <div class="home-hero-text">
+                                <p class="home-time-label" id="home-time-label">Good evening</p>
+                                <h1 class="home-greeting-name" id="home-greeting">Welcome back, Guest</h1>
+                            </div>
+                            <div class="home-avatar-wrap" id="home-avatar">U</div>
                         </div>
                     </div>
                     <!-- Spotify Import -->
@@ -202,6 +322,79 @@
                         </div>
                         <div class="horizontal-scroll-row" id="home-most-liked"></div>
                     </div>
+
+                    <!-- New Dynamic Sections -->
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#10b981"><i class="fas fa-magic"></i></span>
+                            <h2 class="home-section-title">Made For You</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-made-for-you" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-made-for-you" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-made-for-you"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#ef4444"><i class="fas fa-dumbbell"></i></span>
+                            <h2 class="home-section-title">Workout & Motivation</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-workout" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-workout" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-workout"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#ec4899"><i class="fas fa-heart"></i></span>
+                            <h2 class="home-section-title">Romantic & Love Songs</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-romantic" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-romantic" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-romantic"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#8b5cf6"><i class="fas fa-microphone-alt"></i></span>
+                            <h2 class="home-section-title">Podcasts</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-podcasts" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-podcasts" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-podcasts"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#3b82f6"><i class="fas fa-cloud-moon"></i></span>
+                            <h2 class="home-section-title">Mood & Chill</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-moods" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-moods" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-moods"></div>
+                    </div>
+
+                    <div class="home-section">
+                        <div class="home-section-header">
+                            <span class="home-section-icon" style="color:#f59e0b"><i class="fas fa-chart-line"></i></span>
+                            <h2 class="home-section-title">Trending Hits</h2>
+                            <div class="section-action-buttons desktop-only">
+                                <button class="slider-btn prev-btn" data-target="home-trending" aria-label="Scroll left"><i class="fas fa-chevron-left"></i></button>
+                                <button class="slider-btn next-btn" data-target="home-trending" aria-label="Scroll right"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-row" id="home-trending"></div>
+                    </div>
                 </div>
             </section>
 
@@ -215,7 +408,10 @@
                             <p class="page-subtitle" id="favorites-count">Your saved tracks</p>
                         </div>
                     </div>
-                    <button id="play-all-favorites-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="shuffle-favorites-btn" class="btn-primary page-play-btn" style="background: rgba(255,255,255,0.1); color: var(--text-primary);"><i class="fas fa-random"></i> Shuffle</button>
+                        <button id="play-all-favorites-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
+                    </div>
                 </div>
                 <div class="results-grid" id="favorites-results"></div>
             </section>
@@ -230,6 +426,12 @@
                             <p class="page-subtitle">All your playlists</p>
                         </div>
                     </div>
+                    <div style="display: flex; gap: 8px; margin-left: auto;">
+                        <button id="shuffle-playlists-btn" class="btn-primary page-play-btn" style="background: rgba(255,255,255,0.1); color: var(--text-primary);" onclick="if(window.app && window.app.ui) window.app.ui.shuffleAllPlaylists && window.app.ui.shuffleAllPlaylists()"><i class="fas fa-random"></i> Shuffle All</button>
+                        <button id="create-playlist-btn" class="btn-primary">
+                            <i class="fas fa-plus"></i> Create Playlist
+                        </button>
+                    </div>
                 </div>
                 <div class="results-grid" id="playlists-results"></div>
             </section>
@@ -241,7 +443,10 @@
                         <button id="back-to-playlists-btn" class="icon-btn page-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
                         <h2 id="detail-playlist-title" class="page-title" style="margin:0;">Playlist</h2>
                     </div>
-                    <button id="play-all-detail-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="shuffle-detail-btn" class="btn-primary page-play-btn" style="background: rgba(255,255,255,0.1); color: var(--text-primary);"><i class="fas fa-random"></i> Shuffle</button>
+                        <button id="play-all-detail-btn" class="btn-primary page-play-btn"><i class="fas fa-play"></i> Play All</button>
+                    </div>
                 </div>
                 <div class="results-grid" id="playlist-detail-results"></div>
             </section>
@@ -391,14 +596,14 @@
 
             <!-- Profile View -->
             <section id="profile-view" class="view-section hidden">
-                <div class="profile-header-card" style="display: flex; align-items: center; gap: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 32px; border-radius: 16px; margin-bottom: 32px; flex-wrap: wrap;">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 32px; text-transform: uppercase; cursor: pointer; overflow: hidden; position: relative;" id="profile-page-avatar" title="Click to upload profile picture">U</div>
+                <div class="profile-header-card" style="display: flex; align-items: center; gap: 32px; background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0) 100%); border: 1px solid rgba(255,255,255,0.08); padding: 40px; border-radius: 24px; margin-bottom: 40px; flex-wrap: wrap; box-shadow: var(--shadow-elevated);">
+                    <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 64px; text-transform: lowercase; cursor: pointer; overflow: hidden; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" id="profile-page-avatar" title="Click to upload profile picture">u</div>
                     <div style="flex: 1; min-width: 200px;">
-                        <h1 id="profile-page-username" style="font-size: 28px; font-weight: 800; margin: 0; font-family: 'Outfit', sans-serif;">Username</h1>
-                        <p id="profile-page-joined" style="font-size: 13px; color: var(--text-secondary); margin: 4px 0 16px 0;">Member since --</p>
-                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                            <button id="profile-logout-btn" class="btn-primary" style="background: var(--danger); font-size: 12px; padding: 6px 12px;"><i class="fas fa-sign-out-alt"></i> Log Out</button>
-                            <button id="profile-admin-btn" class="btn-primary hidden" style="background: var(--accent); color: #000; font-size: 12px; padding: 6px 12px;"><i class="fas fa-user-shield"></i> Admin Panel</button>
+                        <h1 id="profile-page-username" style="font-size: 48px; font-weight: 900; margin: 0; font-family: 'Outfit', sans-serif; letter-spacing: -0.02em; text-transform: lowercase;">username</h1>
+                        <p id="profile-page-joined" style="font-size: 16px; color: var(--text-secondary); margin: 8px 0 24px 0; font-weight: 500;">Member since --</p>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <button id="profile-logout-btn" class="btn-primary" style="background: #e11d48; color: #fff; font-size: 14px; font-weight: 700; padding: 10px 24px; border-radius: 24px; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i> Log Out</button>
+                            <button id="profile-admin-btn" class="btn-primary hidden" style="background: var(--accent); color: #000; font-size: 14px; font-weight: 700; padding: 10px 24px; border-radius: 24px;"><i class="fas fa-user-shield"></i> Admin Panel</button>
                         </div>
                     </div>
                 </div>
@@ -437,16 +642,45 @@
 
                     <!-- Right: Account Settings -->
                     <div class="profile-settings-side" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 24px; border-radius: 16px;">
-                        <h3 style="margin-top: 0; font-family: 'Outfit', sans-serif;">Account Settings</h3>
-                        <div class="auth-form" style="margin-top: 16px;">
+                        <h3 style="margin-top: 0; font-family: 'Outfit', sans-serif; font-size: 20px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-cog"></i> Settings</h3>
+                        
+                        <div class="auth-form" style="margin-top: 24px;">
+                            <h4 style="font-size: 14px; color: var(--text-primary); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">Security</h4>
                             <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">Change Password</label>
-                            <input type="password" id="profile-old-pass" placeholder="Current Password" style="margin-bottom: 12px; width: 100%;">
-                            <input type="password" id="profile-new-pass" placeholder="New Password" style="margin-bottom: 16px; width: 100%;">
+                            <input type="password" id="profile-old-pass" placeholder="Current Password" style="margin-bottom: 12px; width: 100%; background: rgba(0,0,0,0.2);">
+                            <input type="password" id="profile-new-pass" placeholder="New Password" style="margin-bottom: 16px; width: 100%; background: rgba(0,0,0,0.2);">
                             <p id="profile-settings-error" class="auth-error hidden" style="margin-bottom: 12px;"></p>
                             <p id="profile-settings-success" style="color: var(--accent); font-size: 13px; text-align: center; margin-bottom: 12px;" class="hidden"></p>
-                            <button type="button" id="profile-save-btn" class="btn-primary auth-submit" style="width: 100%;">Save Changes</button>
+                            <button type="button" id="profile-save-btn" class="btn-primary auth-submit" style="width: 100%;">Save Password</button>
+                        </div>
+
+                        <div class="auth-form" style="margin-top: 32px;">
+                            <h4 style="font-size: 14px; color: var(--text-primary); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">App Data</h4>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 600;">Clear Local Cache</div>
+                                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Free up storage by clearing app data</div>
+                                </div>
+                                <button class="btn-primary" onclick="localStorage.clear(); window.location.reload();" style="background: rgba(255,255,255,0.1); color: var(--text-primary); padding: 8px 12px; font-size: 12px;">Clear Cache</button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard View -->
+            <section id="leaderboard-view" class="view-section hidden">
+                <div class="page-header">
+                    <div class="page-header-left">
+                        <div class="page-icon-badge" style="background: rgba(255,193,7,0.15); color: #ffc107;"><i class="fas fa-trophy"></i></div>
+                        <div>
+                            <h2 class="page-title" style="margin:0;">Leaderboard</h2>
+                            <p class="page-subtitle">Top listeners ranking</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="leaderboard-container" style="display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 24px; border-radius: 16px;">
+                    <!-- Leaderboard items go here -->
                 </div>
             </section>
 
@@ -500,6 +734,7 @@
 
                             <div class="np-actions-row">
                                 <button class="np-action-btn" id="np-fav-btn" title="Add to Liked Songs"><i class="far fa-heart"></i></button>
+                                <button class="np-action-btn" id="np-add-playlist-btn" title="Add to Playlist"><i class="fas fa-folder-plus"></i></button>
                                 <button class="np-action-btn" id="np-lyrics-btn" title="Lyrics"><i class="fas fa-microphone"></i></button>
                                 <button class="np-action-btn" id="np-share-btn" title="Share"><i class="fas fa-share-alt"></i></button>
                                 <button class="np-action-btn" id="np-queue-btn" title="Add to Queue"><i class="fas fa-list-ul"></i></button>
@@ -516,6 +751,17 @@
                     </div>
                     <div id="lyrics-content" class="lyrics-content-area">
                         <!-- Lyrics will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Queue Panel -->
+                <div id="queue-panel" class="lyrics-panel">
+                    <div class="lyrics-header">
+                        <h2>Up Next</h2>
+                        <button id="queue-close-btn" class="icon-btn" style="color: var(--text-primary); font-size: 20px;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="queue-content" class="lyrics-content-area" style="padding: 24px 32px; display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Queue items will be injected here -->
                     </div>
                 </div>
             </section>
@@ -558,6 +804,7 @@
 
             <!-- Right: Extra Controls & Volume -->
             <div class="player-right">
+                <button class="icon-btn tooltip-btn" id="add-playlist-btn" title="Add to Playlist"><i class="fas fa-folder-plus"></i></button>
                 <button class="icon-btn tooltip-btn" id="lyrics-btn" title="Lyrics"><i class="fas fa-microphone"></i></button>
                 <button class="icon-btn tooltip-btn" id="queue-btn" title="Queue"><i class="fas fa-list-ul"></i></button>
                 <button class="icon-btn tooltip-btn" id="connect-btn" title="Connect to Device"><i class="fas fa-laptop-house"></i></button>
@@ -568,6 +815,22 @@
                 <button class="icon-btn tooltip-btn" id="fs-toggle-btn" title="Now Playing"><i class="fas fa-expand-alt"></i></button>
             </div>
         </footer>
+    </div>
+
+    <!-- Add to Playlist Modal -->
+    <div id="add-playlist-modal" class="auth-overlay hidden" style="z-index: 10600;">
+        <div class="auth-card" style="max-width: 400px; width: 90%; display: flex; flex-direction: column; padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px;">Add to Playlist</h2>
+                <button id="close-add-playlist-btn" class="icon-btn" title="Close" style="color: var(--text-primary);"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="add-playlist-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto;">
+                <!-- Playlist options will be injected here -->
+            </div>
+            <button id="add-playlist-create-new-btn" class="btn-primary" style="margin-top: 16px; width: 100%;">
+                <i class="fas fa-plus"></i> New Playlist
+            </button>
+        </div>
     </div>
 
     <!-- Auth Overlay -->
@@ -681,9 +944,77 @@
         </div>
     </div>
 
+    <!-- Theme Customizer Modal -->
+    <div id="theme-modal" class="auth-overlay hidden" style="z-index: 10700; backdrop-filter: blur(12px);">
+        <div class="auth-card" style="max-width: 400px; width: 90%; display: flex; flex-direction: column; padding: 24px; border: 1px solid rgba(255,255,255,0.05); background: var(--ambient-2, #181818); box-shadow: 0 24px 64px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;"><i class="fas fa-palette" style="color: var(--accent); margin-right: 8px;"></i> Customize Theme</h2>
+                <button id="close-theme-btn" class="icon-btn tooltip-btn" title="Close" style="color: var(--text-secondary); width: 32px; height: 32px; font-size: 18px; background: rgba(255,255,255,0.05); border-radius: 50%;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="theme-section" style="margin-bottom: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Accent Color</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;" id="theme-color-picker">
+                    <button class="theme-color-btn" data-color="#1db954" style="background: #1db954; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s;"></button>
+                    <button class="theme-color-btn" data-color="#3b82f6" style="background: #3b82f6; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s;"></button>
+                    <button class="theme-color-btn" data-color="#ef4444" style="background: #ef4444; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s;"></button>
+                    <button class="theme-color-btn" data-color="#a855f7" style="background: #a855f7; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s;"></button>
+                    <button class="theme-color-btn" data-color="#f59e0b" style="background: #f59e0b; width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s;"></button>
+                    <!-- Custom Color Picker -->
+                    <div style="position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.2); cursor: pointer;" title="Custom Color">
+                        <input type="color" id="custom-theme-color" value="#1db954" style="position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; cursor: pointer; border: none; padding: 0; margin: 0;">
+                        <i class="fas fa-plus" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="theme-section" style="margin-bottom: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Background Style</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" id="theme-bg-picker">
+                    <button class="theme-option-btn" data-bg="default">Deep Dark</button>
+                    <button class="theme-option-btn" data-bg="midnight">Midnight</button>
+                    <button class="theme-option-btn" data-bg="amoled">AMOLED</button>
+                    <button class="theme-option-btn" data-bg="light">Light Mode</button>
+                </div>
+            </div>
+            <div class="theme-section" style="margin-bottom: 24px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Custom Wallpaper</h3>
+                <div style="display: flex; gap: 8px;">
+                    <input type="file" id="custom-wallpaper-upload" accept="image/*,video/*" style="display: none;">
+                    <button class="btn-primary" style="flex: 1; padding: 8px 12px; font-size: 13px;" onclick="document.getElementById('custom-wallpaper-upload').click()">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                    <button class="theme-option-btn" id="remove-wallpaper-btn" style="flex: 1; padding: 8px 12px; font-size: 13px;">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+                <p style="font-size: 11px; color: var(--text-secondary); margin-top: 8px; margin-bottom: 0;">Upload an image or video to set as your global background.</p>
+            </div>
+            <div class="theme-section">
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Border Style</h3>
+                <div style="display: flex; gap: 8px;" id="theme-radius-picker">
+                    <button class="theme-option-btn" data-radius="0px" style="flex: 1;">Sharp</button>
+                    <button class="theme-option-btn" data-radius="8px" style="flex: 1;">Rounded</button>
+                    <button class="theme-option-btn" data-radius="24px" style="flex: 1;">Pill</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Floating Theme Toggle Button -->
+    <button id="theme-toggle-btn" class="btn-primary" style="position: fixed; bottom: 100px; right: 24px; z-index: 1000; width: 48px; height: 48px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+        <i class="fas fa-palette"></i>
+    </button>
     <!-- Application Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
-    <script type="module" src="js/app.js?v=11"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/player.js"></script>
+    <script src="/js/lyrics.js"></script>
+    <script src="/js/visualizer.js"></script>
+    <script src="/js/theme.js"></script>
+    <script type="module" src="js/app.js?v=14"></script>
 </body>
 
 </html>
