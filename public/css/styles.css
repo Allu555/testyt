@@ -4449,4 +4449,5 @@ body.is-playing .play-pause-btn.playing {
 }
 .np-art-wrapper.show-video #np-large-art {
     opacity: 0.2 !important;
-}
+}. m o b i l e - t o p - l o g o   {   d i s p l a y :   n o n e   ! i m p o r t a n t ;   }   @ m e d i a   ( m a x - w i d t h :   1 2 0 0 p x )   {   . m o b i l e - t o p - l o g o   {   d i s p l a y :   f l e x   ! i m p o r t a n t ;   }   }  
+ 
