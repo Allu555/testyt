@@ -5025,7 +5025,8 @@ body.is-playing .play-pause-btn.playing {
     .sidebar,
     body.mobile .sidebar,
     body.mobile.player-active .sidebar {
-        bottom: var(--player-h) !important;
+        bottom: 0 !important;
+        z-index: 2000 !important;
     }
 
     .player-bar,
