@@ -324,6 +324,17 @@ export class UI {
 
         // Dynamic Ambient Color Sync
         this.updateAmbientColors(song);
+
+        // Update Media Session API for mobile background controls
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: song.title,
+                artist: song.channelTitle,
+                artwork: [
+                    { src: getHqThumbnail(song.thumbnail), sizes: '512x512', type: 'image/jpeg' }
+                ]
+            });
+        }
     }
 
     updateAmbientColors(song) {

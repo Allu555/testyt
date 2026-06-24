@@ -2040,6 +2040,14 @@ class App {
                 this.player.play();
             }
         };
+        
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', togglePlayPause);
+            navigator.mediaSession.setActionHandler('pause', togglePlayPause);
+            navigator.mediaSession.setActionHandler('previoustrack', () => this.playPrev());
+            navigator.mediaSession.setActionHandler('nexttrack', () => this.playNext());
+        }
+
         document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
         const npPlayPauseBtn = document.getElementById('np-play-pause-btn');
         if (npPlayPauseBtn) npPlayPauseBtn.addEventListener('click', togglePlayPause);
@@ -2515,12 +2523,14 @@ class App {
             this.ui.setPlayingState(true);
             document.body.classList.add('is-pulsing');
             if (this.visualizer) this.visualizer.setPlaying(true);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
         } else {
             this.ui.setPlayingState(false);
             if (state !== YT.PlayerState.BUFFERING) {
                 document.body.classList.remove('is-pulsing');
             }
             if (this.visualizer) this.visualizer.setPlaying(false);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = state === YT.PlayerState.PAUSED ? 'paused' : 'none';
         }
 
         if (state === YT.PlayerState.ENDED) {
