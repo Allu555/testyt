@@ -383,16 +383,36 @@ export class UI {
     }
 
     updateFavoriteButton(isFavorite) {
+        // Mini player favorite button
         const btn = document.getElementById('favorite-current-btn');
-        const icon = btn.querySelector('i');
-        if (isFavorite) {
-            btn.classList.add('active');
-            icon.classList.remove('far');
-            icon.classList.add('fas');
-        } else {
-            btn.classList.remove('active');
-            icon.classList.remove('fas');
-            icon.classList.add('far');
+        if (btn) {
+            const icon = btn.querySelector('i');
+            if (isFavorite) {
+                btn.classList.add('active');
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            } else {
+                btn.classList.remove('active');
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            }
+        }
+
+        // Full screen Now Playing favorite button
+        const npBtn = document.getElementById('np-fav-btn');
+        if (npBtn) {
+            const npIcon = npBtn.querySelector('i');
+            if (isFavorite) {
+                npBtn.classList.add('active');
+                npIcon.classList.remove('far');
+                npIcon.classList.add('fas');
+                npIcon.style.color = 'var(--accent)';
+            } else {
+                npBtn.classList.remove('active');
+                npIcon.classList.remove('fas');
+                npIcon.classList.add('far');
+                npIcon.style.color = '';
+            }
         }
     }
 
