@@ -4821,6 +4821,29 @@ body.is-playing .play-pause-btn.playing {
     }
 
     .player-center .progress-container {
+        display: flex !important;
+        position: absolute;
+        top: -2px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 2px;
+        padding: 0;
+        margin: 0;
+    }
+
+    .player-center .progress-container .time {
+        display: none !important;
+    }
+
+    .player-center .progress-container .progress-bar {
+        height: 2px !important;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .player-center .progress-container .progress-bar::-webkit-slider-thumb {
         display: none !important;
     }
 
@@ -5131,3 +5154,10 @@ body.is-playing .play-pause-btn.playing {
 .np-art-wrapper.show-video #np-large-art {
     opacity: 0.2 !important;
 }
+
+@media (max-width: 900px) {
+    #theme-toggle-btn {
+        display: none !important;
+    }
+}
+
