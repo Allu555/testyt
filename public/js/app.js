@@ -659,6 +659,10 @@ class App {
     }
 
     init() {
+        // Setup silent audio for background playback trick
+        this.silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        this.silentAudio.loop = true;
+
         // Initialize Player by loading YT IFrame Script
         this.initializeYTAPI();
 
@@ -2036,8 +2040,10 @@ class App {
             const state = this.player.player ? this.player.player.getPlayerState() : -1;
             if (state === YT.PlayerState.PLAYING) {
                 this.player.pause();
+                if (this.silentAudio) this.silentAudio.pause();
             } else {
                 this.player.play();
+                if (this.silentAudio) this.silentAudio.play().catch(()=>{});
             }
         };
         
@@ -2303,6 +2309,9 @@ class App {
         // Show player UI immediately even before resolving ID
         this.ui.updateNowPlaying(song, StorageUtils.isFavorite(song.id || song.title));
 
+        // Play silent audio immediately on user click to establish audio context for background playback
+        if (this.silentAudio) this.silentAudio.play().catch(()=>{});
+
         if (!song.id) {
             this.ui.setPlayingState(false);
             const tRow = document.body;
@@ -2527,6 +2536,7 @@ class App {
             document.body.classList.add('is-pulsing');
             if (this.visualizer) this.visualizer.setPlaying(true);
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            if (this.silentAudio) this.silentAudio.play().catch(()=>{});
         } else {
             this.ui.setPlayingState(false);
             if (state !== YT.PlayerState.BUFFERING) {
@@ -2534,6 +2544,7 @@ class App {
             }
             if (this.visualizer) this.visualizer.setPlaying(false);
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = state === YT.PlayerState.PAUSED ? 'paused' : 'none';
+            if (this.silentAudio) this.silentAudio.pause();
         }
 
         if (state === YT.PlayerState.ENDED) {
