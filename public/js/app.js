@@ -2300,6 +2300,9 @@ class App {
             );
         }
 
+        // Show player UI immediately even before resolving ID
+        this.ui.updateNowPlaying(song, StorageUtils.isFavorite(song.id || song.title));
+
         if (!song.id) {
             this.ui.setPlayingState(false);
             const tRow = document.body;
